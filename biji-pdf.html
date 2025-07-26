@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>笔记</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
@@ -137,7 +137,7 @@
 
             <!-- 输入线上PDF的URL -->
             <div class="relative flex-grow max-w-[20%]">
-                <input type="text" id="urlInput" placeholder="输入线上PDF的URL" class="w-full px-2 py-1 bg-white/10 border border-white/20 rounded-md text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-accent/50 text-sm" value="https://y0o0y.online/笔记(1).pdf">
+                <input type="text" id="urlInput" placeholder="输入线上PDF的URL" class="w-full px-2 py-1 bg-white/10 border border-white/20 rounded-md text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-accent/50 text-sm" value="http://y0o0y.online/笔记(1).pdf">
                 <button id="loadUrlButton" class="absolute right-1.5 top-1/2 transform -translate-y-1/2 text-white/70 hover:text-white">
                     <i class="fa fa-external-link"></i>
                 </button>
@@ -206,6 +206,9 @@
     </main>
     
     <script>
+        // 检测iOS设备
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        
         // 初始化PDF.js
         const pdfjsLib = window['pdfjs-dist/build/pdf'];
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.worker.min.js';
@@ -270,7 +273,7 @@
             loadUrlButton.addEventListener('click', handleUrlLoad);
             
             // 页面加载完成后默认加载指定的PDF
-            const defaultPDFUrl = 'https://y0o0y.online/笔记(1).pdf';
+            const defaultPDFUrl = 'http://y0o0y.online/笔记(1).pdf';
             urlInput.value = defaultPDFUrl;
 
             // 添加默认加载提示
@@ -442,7 +445,7 @@
             });
         }
         
-        // 渲染所有页面 - 优化性能
+        // 渲染所有页面 - 针对iOS设备优化
         function renderAllPages() {
             if (!pdfDoc || isRendering) return;
 
@@ -455,6 +458,10 @@
             const totalPages = pdfDoc.numPages;
             let renderedPages = 0;
 
+            // 针对iOS设备的特殊处理
+            const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            const iosRenderDelay = isIOSDevice ? 200 : 100; // iOS设备增加渲染延迟
+            
             // 优化：使用requestAnimationFrame提高渲染性能
             function renderPage(pageNum) {
                 requestAnimationFrame(() => {
@@ -469,11 +476,27 @@
 
                         // 处理设备像素比，提高清晰度
                         const devicePixelRatio = window.devicePixelRatio || 1;
-                        canvas.width = viewport.width * devicePixelRatio;
-                        canvas.height = viewport.height * devicePixelRatio;
+                        
+                        // iOS设备上的Canvas渲染优化
+                        if (isIOSDevice) {
+                            // 减少Canvas的分辨率，提高iOS设备上的渲染性能
+                            const iosScaleFactor = Math.min(devicePixelRatio, 1.5);
+                            canvas.width = viewport.width * iosScaleFactor;
+                            canvas.height = viewport.height * iosScaleFactor;
+                            context.scale(iosScaleFactor, iosScaleFactor);
+                            
+                            // 添加iOS专用的Canvas渲染样式
+                            canvas.style.transform = 'translateZ(0)';
+                            canvas.style.webkitTransform = 'translateZ(0)';
+                            canvas.style.willChange = 'transform';
+                        } else {
+                            // 非iOS设备使用正常的设备像素比
+                            canvas.width = viewport.width * devicePixelRatio;
+                            canvas.height = viewport.height * devicePixelRatio;
+                            context.scale(devicePixelRatio, devicePixelRatio);
+                        }
+                        
                         canvas.style.width = '100%';
-
-                        context.scale(devicePixelRatio, devicePixelRatio);
 
                         // 添加淡入动画
                         canvas.style.opacity = '0';
@@ -506,18 +529,32 @@
 
                             // 渲染下一页
                             if (renderedPages < totalPages) {
-                                // 添加一些延迟，避免渲染过快
+                                // iOS设备增加渲染延迟，减少内存压力
                                 setTimeout(() => {
                                     renderPage(renderedPages + 1);
-                                }, 100);
+                                }, iosRenderDelay);
                             } else {
                                 // 所有页面渲染完成后
                                 isRendering = false;
-                                // 平滑滚动到第一页
-                                if (pageElements.length > 0) {
+                                
+                                // 解决iOS设备上可能出现的渲染问题
+                                if (isIOSDevice) {
+                                    // 强制重绘
+                                    pdfContainer.style.display = 'none';
                                     setTimeout(() => {
-                                        pageElements[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                    }, 300);
+                                        pdfContainer.style.display = 'flex';
+                                        // 平滑滚动到第一页
+                                        if (pageElements.length > 0) {
+                                            pageElements[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                        }
+                                    }, 100);
+                                } else {
+                                    // 平滑滚动到第一页
+                                    if (pageElements.length > 0) {
+                                        setTimeout(() => {
+                                            pageElements[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                        }, 300);
+                                    }
                                 }
                             }
                         });
@@ -894,4 +931,5 @@
             console.log('高亮显示搜索结果:', result);
         }
     </script>
+</body>
 </html>
