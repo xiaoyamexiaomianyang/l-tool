@@ -272,6 +272,19 @@
             // 页面加载完成后默认加载指定的PDF
             const defaultPDFUrl = 'http://y0o0y.online/笔记(1).pdf';
             urlInput.value = defaultPDFUrl;
+
+            // 添加默认加载提示
+            pdfViewer.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-[60vh]">
+                    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mb-3"></div>
+                    <h3 class="text-base font-medium">正在加载 PDF</h3>
+                    <p class="mt-1.5 text-xs text-gray-500">${defaultPDFUrl}</p>
+                    <div class="mt-3 w-56 bg-gray-200 rounded-full h-2">
+                        <div id="loadingProgress" class="bg-primary h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <p id="loadingText" class="mt-1.5 text-xs text-gray-500">准备中...</p>
+                </div>
+            `;
             loadPDF(defaultPDFUrl);
         });
         
@@ -332,7 +345,7 @@
             pdfViewer.innerHTML = `
                 <div class="flex flex-col items-center justify-center h-[60vh]">
                     <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mb-3"></div>
-                    <h3 class="text-base font-medium">正在加载 PDF 文件</h3>
+                    <h3 class="text-base font-medium">正在加载 PDF </h3>
                     <p class="mt-1.5 text-xs text-gray-500">${file.name}</p>
                     <div class="mt-3 w-56 bg-gray-200 rounded-full h-2">
                         <div id="loadingProgress" class="bg-primary h-2 rounded-full" style="width: 0%"></div>
@@ -371,7 +384,7 @@
             pdfViewer.innerHTML = `
                 <div class="flex flex-col items-center justify-center h-[60vh]">
                     <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mb-3"></div>
-                    <h3 class="text-base font-medium">正在加载线上 PDF 文件</h3>
+                    <h3 class="text-base font-medium">正在加载PDF </h3>
                     <p class="mt-1.5 text-xs text-gray-500">${url}</p>
                     <div class="mt-3 w-56 bg-gray-200 rounded-full h-2">
                         <div id="loadingProgress" class="bg-primary h-2 rounded-full" style="width: 0%"></div>
@@ -709,6 +722,10 @@
                 `;
                 groupTitleEl.addEventListener('click', () => {
                     goToPage(heading.page);
+                    // 点击目录项后隐藏目录
+                    if (isTOCVisible) {
+                        toggleTOC();
+                    }
                 });
                 groupEl.appendChild(groupTitleEl);
                 
@@ -741,6 +758,10 @@
                 `;
                 subitemEl.addEventListener('click', () => {
                     goToPage(subitem.page);
+                    // 点击目录项后隐藏目录
+                    if (isTOCVisible) {
+                        toggleTOC();
+                    }
                 });
                 container.appendChild(subitemEl);
                 
