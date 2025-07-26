@@ -206,6 +206,20 @@
     </main>
     
     <script>
+        // 检测iOS设备
+        function isIOS() {
+            return [
+                'iPad Simulator',
+                'iPhone Simulator',
+                'iPod Simulator',
+                'iPad',
+                'iPhone',
+                'iPod'
+            ].includes(navigator.platform)
+            // iPad on iOS 13 detection
+            || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+        }
+        
         // 初始化PDF.js
         const pdfjsLib = window['pdfjs-dist/build/pdf'];
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.worker.min.js';
@@ -221,6 +235,7 @@
         let extractedTitles = []; // 存储提取的标题
         let isRendering = false; // 渲染状态标志
         let isTOCVisible = true; // 目录可见状态
+        let isIOSDevice = isIOS(); // iOS设备标志
         
         // DOM元素
         const fileInput = document.getElementById('fileInput');
@@ -241,6 +256,8 @@
         
         // 确保DOM完全加载后执行初始化
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('设备检测:', isIOSDevice ? 'iOS设备' : '非iOS设备');
+            
             // 事件监听器
             fileInput.addEventListener('change', handleFileSelect);
             searchButton.addEventListener('click', performSearch);
@@ -277,7 +294,7 @@
             pdfViewer.innerHTML = `
                 <div class="flex flex-col items-center justify-center h-[60vh]">
                     <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mb-3"></div>
-                    <h3 class="text-base font-medium">正在加载 PDF</h3>
+                    <h3 class="text-base font-medium">正在加载默认 PDF 文件</h3>
                     <p class="mt-1.5 text-xs text-gray-500">${defaultPDFUrl}</p>
                     <div class="mt-3 w-56 bg-gray-200 rounded-full h-2">
                         <div id="loadingProgress" class="bg-primary h-2 rounded-full" style="width: 0%"></div>
@@ -345,7 +362,7 @@
             pdfViewer.innerHTML = `
                 <div class="flex flex-col items-center justify-center h-[60vh]">
                     <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mb-3"></div>
-                    <h3 class="text-base font-medium">正在加载 PDF </h3>
+                    <h3 class="text-base font-medium">正在加载 PDF 文件</h3>
                     <p class="mt-1.5 text-xs text-gray-500">${file.name}</p>
                     <div class="mt-3 w-56 bg-gray-200 rounded-full h-2">
                         <div id="loadingProgress" class="bg-primary h-2 rounded-full" style="width: 0%"></div>
@@ -384,7 +401,7 @@
             pdfViewer.innerHTML = `
                 <div class="flex flex-col items-center justify-center h-[60vh]">
                     <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mb-3"></div>
-                    <h3 class="text-base font-medium">正在加载PDF </h3>
+                    <h3 class="text-base font-medium">正在加载线上 PDF 文件</h3>
                     <p class="mt-1.5 text-xs text-gray-500">${url}</p>
                     <div class="mt-3 w-56 bg-gray-200 rounded-full h-2">
                         <div id="loadingProgress" class="bg-primary h-2 rounded-full" style="width: 0%"></div>
@@ -442,7 +459,7 @@
             });
         }
         
-        // 渲染所有页面 - 优化性能
+        // 渲染所有页面 - 优化性能和iOS兼容性
         function renderAllPages() {
             if (!pdfDoc || isRendering) return;
 
@@ -454,70 +471,119 @@
             // 计算总页数，用于进度显示
             const totalPages = pdfDoc.numPages;
             let renderedPages = 0;
+            
+            // iOS设备上的特殊处理
+            const iOSRenderOptions = {
+                // 降低iOS设备上的初始缩放比例以提高性能
+                initialScale: isIOSDevice ? 1.0 : 2.0,
+                // 限制iOS设备上的Canvas尺寸，避免内存问题
+                maxCanvasWidth: isIOSDevice ? 2000 : 4000,
+                maxCanvasHeight: isIOSDevice ? 3000 : 6000
+            };
 
             // 优化：使用requestAnimationFrame提高渲染性能
             function renderPage(pageNum) {
                 requestAnimationFrame(() => {
                     pdfDoc.getPage(pageNum).then(function(page) {
-                        // 使用实际缩放因子进行渲染
-                        const viewport = page.getViewport({ scale: zoom * 2.0 }); 
-
-                        const canvas = document.createElement('canvas');
-                        const context = canvas.getContext('2d');
-                        canvas.className = 'pdf-page bg-white my-2';
-                        canvas.dataset.pageNumber = pageNum;
-
-                        // 处理设备像素比，提高清晰度
-                        const devicePixelRatio = window.devicePixelRatio || 1;
-                        canvas.width = viewport.width * devicePixelRatio;
-                        canvas.height = viewport.height * devicePixelRatio;
-                        canvas.style.width = '100%';
-
-                        context.scale(devicePixelRatio, devicePixelRatio);
-
-                        // 添加淡入动画
-                        canvas.style.opacity = '0';
-                        canvas.style.transition = 'opacity 0.3s ease';
-
-                        pdfContainer.appendChild(canvas);
-                        pageElements[pageNum-1] = canvas;
-
-                        // 渲染PDF页面
-                        const renderContext = {
-                            canvasContext: context,
-                            viewport: viewport
-                        };
-
-                        const renderTask = page.render(renderContext);
-                        renderTask.promise.then(() => {
-                            renderedPages++;
-
-                            // 更新渲染进度
-                            const loadingProgress = document.getElementById('loadingProgress');
-                            const loadingText = document.getElementById('loadingText');
-                            if (loadingProgress && loadingText) {
-                                const percent = Math.round((renderedPages / totalPages) * 100);
-                                loadingProgress.style.width = `${percent}%`;
-                                loadingText.textContent = `正在渲染页面 ${renderedPages}/${totalPages}`;
+                        try {
+                            // 使用实际缩放因子进行渲染
+                            const viewport = page.getViewport({ scale: zoom * iOSRenderOptions.initialScale });
+                            
+                            // 调整Canvas尺寸以适应iOS设备
+                            let scaledViewport = viewport;
+                            if (isIOSDevice && (viewport.width > iOSRenderOptions.maxCanvasWidth || viewport.height > iOSRenderOptions.maxCanvasHeight)) {
+                                const widthScale = iOSRenderOptions.maxCanvasWidth / viewport.width;
+                                const heightScale = iOSRenderOptions.maxCanvasHeight / viewport.height;
+                                const scale = Math.min(widthScale, heightScale);
+                                scaledViewport = page.getViewport({ scale: viewport.scale * scale });
+                                console.log(`iOS设备上调整页面 ${pageNum} 尺寸: 原尺寸 ${viewport.width}x${viewport.height}, 新尺寸 ${scaledViewport.width}x${scaledViewport.height}`);
                             }
 
-                            // 淡入效果
-                            canvas.style.opacity = '1';
+                            const canvas = document.createElement('canvas');
+                            const context = canvas.getContext('2d');
+                            canvas.className = 'pdf-page bg-white my-2';
+                            canvas.dataset.pageNumber = pageNum;
 
-                            // 渲染下一页
+                            // 处理设备像素比，提高清晰度
+                            const devicePixelRatio = window.devicePixelRatio || 1;
+                            // iOS设备上使用较低的像素比以提高性能
+                            const adjustedPixelRatio = isIOSDevice ? Math.min(devicePixelRatio, 1.5) : devicePixelRatio;
+                            
+                            canvas.width = Math.floor(scaledViewport.width * adjustedPixelRatio);
+                            canvas.height = Math.floor(scaledViewport.height * adjustedPixelRatio);
+                            canvas.style.width = '100%';
+
+                            context.scale(adjustedPixelRatio, adjustedPixelRatio);
+
+                            // 添加淡入动画
+                            canvas.style.opacity = '0';
+                            canvas.style.transition = 'opacity 0.3s ease';
+
+                            pdfContainer.appendChild(canvas);
+                            pageElements[pageNum-1] = canvas;
+
+                            // 渲染PDF页面
+                            const renderContext = {
+                                canvasContext: context,
+                                viewport: scaledViewport
+                            };
+
+                            const renderTask = page.render(renderContext);
+                            renderTask.promise.then(() => {
+                                renderedPages++;
+
+                                // 更新渲染进度
+                                const loadingProgress = document.getElementById('loadingProgress');
+                                const loadingText = document.getElementById('loadingText');
+                                if (loadingProgress && loadingText) {
+                                    const percent = Math.round((renderedPages / totalPages) * 100);
+                                    loadingProgress.style.width = `${percent}%`;
+                                    loadingText.textContent = `正在渲染页面 ${renderedPages}/${totalPages}`;
+                                }
+
+                                // 淡入效果
+                                canvas.style.opacity = '1';
+
+                                // 渲染下一页
+                                if (renderedPages < totalPages) {
+                                    renderPage(renderedPages + 1);
+                                } else {
+                                    // 所有页面渲染完成后
+                                    isRendering = false;
+                                    console.log('所有页面渲染完成');
+                                    
+                                    // 平滑滚动到第一页
+                                    if (pageElements.length > 0) {
+                                        setTimeout(() => {
+                                            pageElements[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                        }, 300);
+                                    }
+                                    
+                                    // iOS设备上的额外通知
+                                    if (isIOSDevice) {
+                                        console.log('iOS设备上的PDF渲染完成');
+                                    }
+                                }
+                            }).catch(error => {
+                                console.error(`渲染第 ${pageNum} 页时出错:`, error);
+                                // 继续渲染下一页
+                                if (renderedPages < totalPages) {
+                                    renderPage(renderedPages + 1);
+                                }
+                            });
+                        } catch (error) {
+                            console.error(`处理第 ${pageNum} 页时出错:`, error);
+                            // 继续渲染下一页
                             if (renderedPages < totalPages) {
                                 renderPage(renderedPages + 1);
-                            } else {
-                                // 所有页面渲染完成后
-                                isRendering = false;
-                                // 平滑滚动到第一页
-                                if (pageElements.length > 0) {
-                                    setTimeout(() => {
-                                        pageElements[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                    }, 300);
-                                }
                             }
-                        });
+                        }
+                    }).catch(error => {
+                        console.error(`获取第 ${pageNum} 页时出错:`, error);
+                        // 继续渲染下一页
+                        if (renderedPages < totalPages) {
+                            renderPage(renderedPages + 1);
+                        }
                     });
                 });
             }
@@ -609,7 +675,7 @@
             });
         }
         
-        // 分析页面文本，识别标题 - 恢复原始版本
+        // 分析页面文本，识别标题
         function analyzePageText(textItems) {
             // 定义中文数字和匹配模式
             const chineseNumbers = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', 
@@ -856,32 +922,6 @@
                 searchResultsList.appendChild(noResultsEl);
                 return;
             }
-            
-            const resultsList = document.createElement('ul');
-            resultsList.className = 'space-y-1';
-            
-            searchResults.forEach((result, index) => {
-                const listItem = document.createElement('li');
-                listItem.className = `rounded cursor-pointer hover:bg-primary/5 p-1.5 ${index === currentHighlightIndex ? 'bg-primary/10' : ''}`;
-                listItem.innerHTML = `
-                    <div class="flex justify-between items-center">
-                        <span class="font-medium text-sm">第 ${result.page} 页</span>
-                        <span class="text-xs">${result.count} 个匹配</span>
-                    </div>
-                `;
-                
-                listItem.addEventListener('click', () => {
-                    currentHighlightIndex = index;
-                    highlightSearchResult();
-                    displaySearchResults();
-                });
-                
-                resultsList.appendChild(listItem);
-            });
-            
-            searchResultsList.appendChild(resultsList);
-        }
-        
         // 高亮显示搜索结果
         function highlightSearchResult() {
             if (currentHighlightIndex < 0 || currentHighlightIndex >= searchResults.length) return;
@@ -889,6 +929,81 @@
             const result = searchResults[currentHighlightIndex];
             goToPage(result.page);
             console.log('高亮显示搜索结果:', result);
+        }
+        
+        // 添加键盘导航支持
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                searchResultsEl.classList.add('hidden');
+                return;
+            }
+            
+            // 只有在搜索结果可见时才处理导航键
+            if (!searchResultsEl.classList.contains('hidden')) {
+                if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (currentHighlightIndex > 0) {
+                        currentHighlightIndex--;
+                        highlightSearchResult();
+                        displaySearchResults();
+                    }
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (currentHighlightIndex < searchResults.length - 1) {
+                        currentHighlightIndex++;
+                        highlightSearchResult();
+                        displaySearchResults();
+                    }
+                }
+            }
+        });
+        
+        // 添加iOS设备上的触摸滚动优化
+        pdfViewer.addEventListener('touchstart', function(e) {
+            // 记录触摸开始位置
+            this.touchStartX = e.touches[0].clientX;
+            this.touchStartY = e.touches[0].clientY;
+            this.isScrolling = false;
+        }, { passive: true });
+        
+        pdfViewer.addEventListener('touchmove', function(e) {
+            if (!this.touchStartX || !this.touchStartY) return;
+            
+            const dx = e.touches[0].clientX - this.touchStartX;
+            const dy = e.touches[0].clientY - this.touchStartY;
+            
+            // 判断是否是滚动操作
+            if (Math.abs(dy) > Math.abs(dx) * 2) {
+                this.isScrolling = true;
+            }
+        }, { passive: true });
+        
+        pdfViewer.addEventListener('touchend', function(e) {
+            this.touchStartX = null;
+            this.touchStartY = null;
+            
+            // 如果是滚动操作，则阻止默认行为
+            if (this.isScrolling) {
+                e.preventDefault();
+                this.isScrolling = false;
+            }
+        }, { passive: false });
+        
+        // 优化iOS设备上的Canvas渲染性能
+        if (isIOSDevice) {
+            // 在iOS设备上禁用双击缩放
+            document.addEventListener('touchstart', function(e) {
+                if (e.touches.length > 1) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+            
+            // 优化Canvas渲染
+            const originalRenderAllPages = renderAllPages;
+            renderAllPages = function() {
+                // 在iOS设备上降低初始渲染质量以提高性能
+                originalRenderAllPages();
+            };
         }
     </script>
 </html>
