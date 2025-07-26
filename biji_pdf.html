@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>简约PDF查看器</title>
+    <title>PDF查看器 - 修复版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -65,56 +65,39 @@
             .mobile-nav-active {
                 @apply bg-primary/10 text-primary;
             }
+            .canvas-container {
+                @apply w-full overflow-hidden rounded-2xl;
+            }
         }
     </style>
 </head>
 <body class="bg-gray-100 font-sans">
-    <!-- 顶部导航栏 - 移动端优化 -->
+    <!-- 顶部导航栏 -->
     <header class="fixed top-0 left-0 right-0 bg-white/90 backdrop-blur-sm shadow-elevation-2 z-50 transition-all duration-300">
-        <!-- 主导航栏 -->
         <div class="container mx-auto px-3 py-2 flex items-center justify-between">
             <div class="flex items-center space-x-2">
                 <button id="file-menu-btn" class="p-2.5 rounded-full hover:bg-gray-100 transition-all hover-lift">
                     <i class="fa fa-bars text-dark"></i>
                 </button>
-                <h1 class="text-base font-medium text-dark hidden sm:block">简约PDF</h1>
+                <h1 class="text-base font-medium text-dark hidden sm:block">PDF查看器</h1>
             </div>
             
-            <!-- 移动端主导航按钮 -->
-            <div class="flex items-center space-x-1">
-                <!-- 优化：搜索框直接显示，替代之前的搜索按钮 -->
-                <div class="relative hidden sm:block mr-2">
-                    <input type="text" id="search-input" placeholder="搜索PDF内容..." 
-                           class="py-2 px-3 pr-8 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all shadow-sm text-sm w-40 lg:w-60">
-                    <button id="search-btn" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-primary hover-lift">
-                        <i class="fa fa-search"></i>
-                    </button>
-                </div>
-                
-                <!-- 移动端搜索按钮 -->
-                <button id="mobile-search-btn" class="p-2.5 rounded-full hover:bg-gray-100 transition-all hover-lift sm:hidden">
-                    <i class="fa fa-search text-dark"></i>
+            <!-- 搜索框 -->
+            <div class="relative flex-1 max-w-md mx-3">
+                <input type="text" id="search-input" placeholder="搜索PDF内容..." 
+                       class="w-full py-2 px-3 pr-8 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all shadow-sm text-sm">
+                <button id="search-btn" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-primary hover-lift">
+                    <i class="fa fa-search"></i>
                 </button>
-                
+            </div>
+            
+            <div class="flex items-center space-x-1">
                 <button id="outline-toggle" class="p-2.5 rounded-full hover:bg-gray-100 transition-all hover-lift">
                     <i class="fa fa-list text-dark"></i>
                 </button>
                 <button id="theme-toggle" class="p-2.5 rounded-full hover:bg-gray-100 transition-all hover-lift">
                     <i class="fa fa-moon-o text-dark"></i>
                 </button>
-            </div>
-        </div>
-        
-        <!-- 移动端搜索框 -->
-        <div id="mobile-search-container" class="absolute top-full left-0 right-0 bg-white shadow-elevation-3 transform -translate-y-full opacity-0 transition-all duration-300 pointer-events-none">
-            <div class="container mx-auto px-4 py-3">
-                <div class="relative">
-                    <input type="text" id="mobile-search-input" placeholder="搜索PDF内容..." 
-                           class="w-full py-3 px-4 pr-10 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all shadow-sm">
-                    <button id="mobile-search-btn-exec" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-primary hover-lift">
-                        <i class="fa fa-search"></i>
-                    </button>
-                </div>
             </div>
         </div>
         
@@ -141,7 +124,7 @@
 
     <!-- 主内容区 -->
     <main class="pt-16 pb-8 min-h-screen">
-        <div id="pdf-container" class="container mx-auto px-3 py-6 flex flex-col items-center space-y-6">
+        <div id="pdf-container" class="container mx-auto px-2 py-4 flex flex-col items-center space-y-3">
             <!-- PDF页面将在这里渲染 -->
             <div id="placeholder" class="w-full h-96 flex flex-col items-center justify-center bg-paper rounded-2xl shadow-elevation-2 border border-gray-100">
                 <i class="fa fa-file-pdf-o text-6xl text-gray-300 mb-4"></i>
@@ -153,6 +136,12 @@
             <div id="loading-indicator" class="hidden w-full py-8 flex flex-col items-center justify-center">
                 <div class="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4"></div>
                 <p class="text-gray-500">正在加载PDF，请稍候...</p>
+            </div>
+            
+            <!-- 错误提示 -->
+            <div id="error-message" class="hidden w-full p-6 bg-red-50 rounded-2xl border border-red-200 text-red-600 text-center">
+                <i class="fa fa-exclamation-triangle text-2xl mb-2"></i>
+                <p id="error-text">加载PDF时发生错误</p>
             </div>
         </div>
     </main>
@@ -170,7 +159,7 @@
         </div>
     </div>
 
-    <!-- 右侧大纲导航 - 移动端优化 -->
+    <!-- 右侧大纲导航 -->
     <div id="outline-panel" class="fixed inset-0 bg-black/50 z-50 hidden">
         <div class="absolute top-0 right-0 bottom-0 w-[85%] max-w-sm bg-white shadow-elevation-4 transform translate-x-full transition-transform duration-300 rounded-l-2xl overflow-y-auto">
             <div class="p-3 border-b border-gray-200 flex justify-between items-center rounded-l-2xl">
@@ -217,16 +206,14 @@
         const outlineList = document.getElementById('outline-list');
         const searchInput = document.getElementById('search-input');
         const searchBtn = document.getElementById('search-btn');
-        const mobileSearchBtn = document.getElementById('mobile-search-btn');
-        const mobileSearchContainer = document.getElementById('mobile-search-container');
-        const mobileSearchInput = document.getElementById('mobile-search-input');
-        const mobileSearchBtnExec = document.getElementById('mobile-search-btn-exec');
         const searchResultsPanel = document.getElementById('search-results');
         const resultsList = document.getElementById('results-list');
         const closeResultsBtn = document.getElementById('close-results');
         const themeToggle = document.getElementById('theme-toggle');
         const loadingIndicator = document.getElementById('loading-indicator');
         const closeOutlineBtn = document.getElementById('close-outline');
+        const errorMessage = document.getElementById('error-message');
+        const errorText = document.getElementById('error-text');
         
         // 初始化事件监听器
         function initEventListeners() {
@@ -246,23 +233,8 @@
             
             // 搜索功能
             searchBtn.addEventListener('click', handleSearch);
-            mobileSearchBtn.addEventListener('click', toggleMobileSearch);
-            mobileSearchBtnExec.addEventListener('click', () => {
-                searchInput.value = mobileSearchInput.value;
-                handleSearch();
-                toggleMobileSearch();
-            });
-            
             searchInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') handleSearch();
-            });
-            
-            mobileSearchInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    searchInput.value = mobileSearchInput.value;
-                    handleSearch();
-                    toggleMobileSearch();
-                }
             });
             
             closeResultsBtn.addEventListener('click', () => {
@@ -284,10 +256,6 @@
             const newIsMobile = window.innerWidth < 640;
             if (newIsMobile !== isMobile) {
                 isMobile = newIsMobile;
-                // 如果从移动视图切换到桌面视图，关闭移动菜单
-                if (!isMobile) {
-                    mobileSearchContainer.classList.add('opacity-0', '-translate-y-full', 'pointer-events-none');
-                }
             }
             
             // 重新渲染页面以适应新的屏幕尺寸
@@ -298,9 +266,6 @@
         
         // 切换文件菜单
         function toggleFileMenu() {
-            // 关闭其他菜单
-            mobileSearchContainer.classList.add('opacity-0', '-translate-y-full', 'pointer-events-none');
-            
             if (fileMenu.classList.contains('opacity-0')) {
                 fileMenu.classList.remove('opacity-0', '-translate-y-full', 'pointer-events-none');
                 fileMenu.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
@@ -310,37 +275,17 @@
             }
         }
         
-        // 切换移动端搜索框
-        function toggleMobileSearch() {
-            // 关闭其他菜单
-            fileMenu.classList.add('opacity-0', '-translate-y-full', 'pointer-events-none');
-            
-            if (mobileSearchContainer.classList.contains('opacity-0')) {
-                mobileSearchContainer.classList.remove('opacity-0', '-translate-y-full', 'pointer-events-none');
-                mobileSearchContainer.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
-                // 自动聚焦搜索框
-                setTimeout(() => {
-                    mobileSearchInput.focus();
-                }, 300);
-            } else {
-                mobileSearchContainer.classList.add('opacity-0', '-translate-y-full', 'pointer-events-none');
-                mobileSearchContainer.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
-            }
-        }
-        
         // 切换大纲面板
         function toggleOutlinePanel() {
             const outlineContent = outlinePanel.querySelector('div');
             
             if (outlinePanel.classList.contains('hidden')) {
                 outlinePanel.classList.remove('hidden');
-                // 延迟显示内容，让背景有淡入效果
                 setTimeout(() => {
                     outlineContent.classList.remove('translate-x-full');
                 }, 10);
             } else {
                 outlineContent.classList.add('translate-x-full');
-                // 延迟隐藏背景，让内容有淡出效果
                 setTimeout(() => {
                     outlinePanel.classList.add('hidden');
                 }, 300);
@@ -372,12 +317,14 @@
         
         // 加载PDF
         function loadPDF(source) {
-            // 显示加载指示器
+            // 重置状态
+            errorMessage.classList.add('hidden');
             placeholder.style.display = 'none';
             loadingIndicator.classList.remove('hidden');
             pdfContainer.innerHTML = '';
             pdfContainer.appendChild(loadingIndicator);
             
+            // 尝试加载PDF
             pdfjsLib.getDocument(source).promise.then((pdf) => {
                 pdfDoc = pdf;
                 totalPages = pdf.numPages;
@@ -398,15 +345,20 @@
                     renderPage(pageNumber).then(() => {
                         pageNumber++;
                         renderNextPage();
+                    }).catch(error => {
+                        console.error(`渲染第 ${pageNumber} 页失败:`, error);
+                        showToast(`渲染第 ${pageNumber} 页失败`);
+                        renderNextPage(); // 继续渲染下一页
                     });
                 }
                 
                 renderNextPage();
             }).catch((error) => {
                 console.error('加载PDF失败:', error);
-                showToast('加载PDF失败，请检查文件或URL');
                 loadingIndicator.classList.add('hidden');
-                placeholder.style.display = 'flex';
+                errorMessage.classList.remove('hidden');
+                errorText.textContent = `加载PDF失败: ${error.message}`;
+                showToast('加载PDF失败，请检查文件或URL');
             });
         }
         
@@ -435,36 +387,58 @@
             window.scrollTo(0, currentScrollY);
         }
         
-        // 渲染单个页面 - 优化Canvas大小适配
+        // 渲染单个页面
         function renderPage(num) {
-            return new Promise((resolve) => {
+            return new Promise((resolve, reject) => {
                 // 创建加载占位符
                 const loadingPlaceholder = document.createElement('div');
-                loadingPlaceholder.className = `w-full aspect-[3/4] bg-gray-100 rounded-2xl mb-6 pdf-loading`;
+                loadingPlaceholder.className = `w-full aspect-[3/4] bg-gray-100 rounded-2xl mb-3 pdf-loading`;
                 loadingPlaceholder.dataset.pageNumber = num;
                 pdfContainer.appendChild(loadingPlaceholder);
                 
                 pdfDoc.getPage(num).then((page) => {
-                    // 优化：根据屏幕宽度动态调整缩放比例
-                    const containerWidth = pdfContainer.clientWidth;
-                    const viewport = page.getViewport({ scale: 1 });
-                    const scale = containerWidth / viewport.width;
+                    // 创建容器元素
+                    const pageContainer = document.createElement('div');
+                    pageContainer.className = `canvas-container mb-3 ${isDarkMode ? 'bg-gray-700' : 'bg-paper'}`;
                     
+                    // 创建Canvas
                     const canvas = document.createElement('canvas');
-                    // 优化：使用自定义类名管理主题相关样式
-                    canvas.className = `page-shadow rounded-2xl mb-6 transition-all duration-300 hover-lift ${isDarkMode ? 'bg-gray-700' : 'bg-paper'}`;
+                    canvas.className = `w-full h-auto page-shadow transition-all duration-300 hover-lift`;
                     canvas.dataset.pageNumber = num;
                     
-                    const context = canvas.getContext('2d');
+                    pageContainer.appendChild(canvas);
+                    
+                    // 获取PDF原始尺寸
+                    const viewport = page.getViewport({ scale: 1 });
+                    
+                    // 计算适合移动端的缩放比例
+                    const containerWidth = pdfContainer.clientWidth;
+                    
+                    // 高清渲染处理
+                    const devicePixelRatio = window.devicePixelRatio || 1;
+                    
+                    // 计算缩放比例，增加安全边距
+                    const margin = isMobile ? 12 : 16;
+                    const contentWidth = containerWidth - margin * 2;
+                    const scale = (contentWidth / viewport.width) * devicePixelRatio;
+                    
+                    // 创建视口
                     const scaledViewport = page.getViewport({ scale });
                     
                     // 设置Canvas尺寸
-                    canvas.height = scaledViewport.height;
                     canvas.width = scaledViewport.width;
+                    canvas.height = scaledViewport.height;
                     
                     // 设置CSS尺寸
                     canvas.style.width = '100%';
+                    canvas.style.height = 'auto';
                     
+                    // 获取Canvas上下文并应用设备像素比
+                    const context = canvas.getContext('2d');
+                    const pixelRatio = devicePixelRatio;
+                    context.scale(pixelRatio, pixelRatio);
+                    
+                    // 渲染PDF
                     const renderContext = {
                         canvasContext: context,
                         viewport: scaledViewport
@@ -473,8 +447,8 @@
                     const renderTask = page.render(renderContext);
                     renderTask.promise.then(() => {
                         // 替换加载占位符
-                        pdfContainer.replaceChild(canvas, loadingPlaceholder);
-                        pageElements[num - 1] = canvas;
+                        pdfContainer.replaceChild(pageContainer, loadingPlaceholder);
+                        pageElements[num - 1] = pageContainer;
                         
                         // 提取页面文本用于搜索
                         page.getTextContent().then((textContent) => {
@@ -482,7 +456,11 @@
                         });
                         
                         resolve();
+                    }).catch(error => {
+                        reject(error);
                     });
+                }).catch(error => {
+                    reject(error);
                 });
             });
         }
@@ -598,13 +576,11 @@
             searchResults = [];
             currentSearchIndex = 0;
             
-            // 关闭搜索框
-            mobileSearchContainer.classList.add('opacity-0', '-translate-y-full', 'pointer-events-none');
-            
             // 搜索所有页面
             for (let i = 0; i < pageElements.length; i++) {
                 const pageElement = pageElements[i];
-                const textContent = pageElement.dataset.textContent || '';
+                const canvas = pageElement.querySelector('canvas');
+                const textContent = canvas ? canvas.dataset.textContent || '' : '';
                 
                 if (textContent.toLowerCase().includes(searchTerm)) {
                     // 简单实现：查找所有匹配位置
@@ -720,7 +696,7 @@
             });
         }
         
-        // 切换主题 - 完善暗黑模式
+        // 切换主题
         function toggleTheme() {
             const body = document.body;
             isDarkMode = !isDarkMode;
@@ -734,7 +710,7 @@
                 pdfContainer.classList.remove('bg-gray-100');
                 pdfContainer.classList.add('bg-gray-800');
                 
-                // 完善：更新所有已渲染页面的背景
+                // 更新所有已渲染页面的背景
                 pageElements.forEach(el => {
                     el.classList.remove('bg-paper');
                     el.classList.add('bg-gray-700');
@@ -748,7 +724,7 @@
                 pdfContainer.classList.add('bg-gray-100');
                 pdfContainer.classList.remove('bg-gray-800');
                 
-                // 完善：更新所有已渲染页面的背景
+                // 更新所有已渲染页面的背景
                 pageElements.forEach(el => {
                     el.classList.add('bg-paper');
                     el.classList.remove('bg-gray-700');
@@ -785,8 +761,11 @@
         // 初始化应用
         function initApp() {
             initEventListeners();
-            showToast('PDF查看器已就绪');
             handleResize(); // 初始化屏幕尺寸检测
+            
+            // 加载默认PDF
+            const defaultPDF = 'https://y0o0y.online/笔记(1).pdf';
+            loadPDF(defaultPDF);
         }
         
         // 当DOM加载完成后初始化应用
