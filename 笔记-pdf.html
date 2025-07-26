@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>笔记</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.min.js"></script>
+    
+    <!-- 配置Tailwind自定义主题 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#8B5A2B',
+                        secondary: '#F5F5DC',
+                        accent: '#CD853F',
+                        notebook: '#FFEBCD',
+                        'notebook-line': '#E8E8E8'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .notebook-paper {
+                background-color: #FFEBCD;
+                background-image: 
+                    linear-gradient(#E8E8E8 1px, transparent 1px),
+                    linear-gradient(90deg, #E8E8E8 1px, transparent 1px);
+                background-size: 20px 20px;
+                background-position: center center;
+            }
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+            .text-shadow {
+                text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+            }
+            .title-highlight {
+                @apply bg-yellow-200 transition-all duration-300;
+            }
+            .nav-shadow {
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            }
+            .pdf-container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            .pdf-page {
+                margin-bottom: 20px;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                transition: all 0.3s ease;
+            }
+            .pdf-page:hover {
+                box-shadow: 0 8px 16px -1px rgba(0, 0, 0, 0.2);
+            }
+            .toc-container {
+                @apply fixed top-0 right-0 h-full w-64 bg-primary/95 text-white shadow-lg z-40 overflow-y-scroll pt-16 scrollbar-hide;
+                transform: translateX(0);
+                transition: transform 0.3s ease;
+            }
+            .toc-toggle {
+                @apply fixed bottom-6 right-6 w-10 h-10 rounded-full bg-primary text-white shadow-lg z-50 flex items-center justify-center cursor-pointer;
+                transform: rotate(0deg);
+                transition: transform 0.3s ease;
+            }
+            .toc-toggle:hover {
+                @apply bg-accent;
+            }
+            .toc-header {
+                @apply p-4 border-b border-white/10;
+            }
+            .toc-content {
+                @apply p-4 h-full;
+                height:auto;
+            }
+            .toc-item {
+                @apply cursor-pointer hover:bg-white/10 rounded px-2 py-1.5 transition-colors mb-1;
+            }
+            .toc-subitem {
+                @apply cursor-pointer hover:bg-white/10 rounded px-4 py-1 transition-colors text-sm mb-0.5;
+            }
+            .truncate-text {
+                @apply truncate;
+            }
+            .zoom-controls {
+                @apply fixed bottom-6 left-6 bg-primary/80 text-white rounded-lg shadow-lg p-2 flex items-center gap-2 z-40;
+            }
+            .zoom-btn {
+                @apply w-8 h-8 rounded-full bg-accent flex items-center justify-center cursor-pointer hover:bg-accent/80 transition-colors;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-secondary to-notebook min-h-screen font-sans">
+    <!-- 头部导航 - 移动端优化 -->
+    <header class="bg-primary text-white fixed top-0 left-0 right-0 z-50 nav-shadow">
+        <div class="container mx-auto px-2 py-2 flex flex-row items-center justify-between gap-2">
+            <!-- 标题 -->
+            <h1 class="text-lg md:text-2xl font-bold text-shadow flex items-center max-w-[30%]">
+                <i class="fa fa-book mr-1.5"></i>
+                <span class="truncate-text">笔记</span>
+            </h1>
+            
+            <!-- 搜索框 - 响应式设计 -->
+            <div class="relative flex-grow max-w-[50%]">
+                <input type="text" id="searchInput" placeholder="搜索PDF内容..." class="w-full px-2 py-1 bg-white/10 border border-white/20 rounded-md text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-accent/50 text-sm">
+                <button id="searchButton" class="absolute right-1.5 top-1/2 transform -translate-y-1/2 text-white/70 hover:text-white">
+                    <i class="fa fa-search"></i>
+                </button>
+            </div>
+            
+            <!-- 上传按钮 - 移动端只显示图标 -->
+            <div class="flex items-center">
+                <input type="file" id="fileInput" accept=".pdf" class="hidden" />
+                <label for="fileInput" class="flex items-center justify-center p-1.5 border border-transparent rounded-md text-white bg-accent hover:bg-accent/80 transition-colors cursor-pointer">
+                    <i class="fa fa-upload"></i>
+                    <span class="hidden sm:inline ml-1.5 text-xs sm:text-sm">上传PDF</span>
+                </label>
+            </div>
+        </div>
+    </header>
+    
+    <!-- 右侧目录导航 -->
+    <div id="tocContainer" class="toc-container">
+        <div class="toc-header">
+            <div class="flex justify-between items-center">
+                <h2 class="text-lg font-bold flex items-center">
+                    <i class="fa fa-list-ul mr-2"></i> 文档目录
+                </h2>
+            </div>
+        </div>
+        <div class="toc-content" id="tableOfContents">
+            <p class="text-white/60 italic">上传PDF文件后将显示文档标题</p>
+        </div>
+    </div>
+    
+    <!-- 目录切换按钮 -->
+    <div id="tocToggle" class="toc-toggle">
+        <i class="fa fa-list"></i>
+    </div>
+    
+    <!-- 缩放控制 -->
+    <div class="zoom-controls">
+        <button id="zoomOut" class="zoom-btn">
+            <i class="fa fa-search-minus"></i>
+        </button>
+        <span id="zoomLevel" class="text-sm">100%</span>
+        <button id="zoomIn" class="zoom-btn">
+            <i class="fa fa-search-plus"></i>
+        </button>
+    </div>
+    
+    <!-- 主体内容 -->
+    <main class="pt-16 pb-12 min-h-screen md:pr-0">
+        <!-- PDF查看区域 -->
+        <div class="container mx-auto px-3">
+            <!-- 搜索结果显示 -->
+            <div id="searchResults" class="mb-3 bg-white/80 rounded-lg p-2 shadow-md hidden">
+                <div class="flex justify-between items-center mb-1.5">
+                    <h3 class="font-medium text-primary text-sm">搜索结果</h3>
+                    <button id="closeSearchResults" class="text-gray-500 hover:text-gray-700">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+                <div id="searchResultsList" class="text-xs space-y-1 max-h-36 overflow-y-auto">
+                    <p class="text-gray-500 italic">搜索结果将显示在这里</p>
+                </div>
+            </div>
+            
+            <!-- PDF容器 -->
+            <div class="bg-white rounded-lg shadow-xl overflow-hidden">
+                <div id="pdfViewer" class="p-4 min-h-[70vh]">
+                    <div class="flex flex-col items-center justify-center h-[60vh] text-primary/60">
+                        <i class="fa fa-file-pdf-o text-5xl mb-3"></i>
+                        <h2 class="text-lg font-medium">请上传PDF文件开始阅读</h2>
+                        <p class="mt-1.5 text-xs">系统将自动识别并提取文档中的标题</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+        // 初始化PDF.js
+        const pdfjsLib = window['pdfjs-dist/build/pdf'];
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.worker.min.js';
+        
+        // 全局变量
+        let pdfDoc = null;
+        let zoom = 1.0;
+        let titleElements = [];
+        let currentHighlightIndex = -1;
+        let searchResults = [];
+        let pageElements = []; // 存储所有页面的DOM元素
+        let extractedTitles = []; // 存储提取的标题
+        let isRendering = false; // 渲染状态标志
+        let isTOCVisible = true; // 目录可见状态
+        
+        // DOM元素
+        const fileInput = document.getElementById('fileInput');
+        const pdfViewer = document.getElementById('pdfViewer');
+        const zoomIn = document.getElementById('zoomIn');
+        const zoomOut = document.getElementById('zoomOut');
+        const zoomLevel = document.getElementById('zoomLevel');
+        const tableOfContents = document.getElementById('tableOfContents');
+        const searchInput = document.getElementById('searchInput');
+        const searchButton = document.getElementById('searchButton');
+        const searchResultsEl = document.getElementById('searchResults');
+        const searchResultsList = document.getElementById('searchResultsList');
+        const closeSearchResults = document.getElementById('closeSearchResults');
+        const tocContainer = document.getElementById('tocContainer');
+        const tocToggle = document.getElementById('tocToggle');
+        
+        // 确保DOM完全加载后执行初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 事件监听器
+            fileInput.addEventListener('change', handleFileSelect);
+            searchButton.addEventListener('click', performSearch);
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') performSearch();
+            });
+            closeSearchResults.addEventListener('click', () => {
+                searchResultsEl.classList.add('hidden');
+            });
+            tocToggle.addEventListener('click', toggleTOC);
+            
+            // 缩放控制
+            zoomIn.addEventListener('click', () => changeZoom(1.2));
+            zoomOut.addEventListener('click', () => changeZoom(0.8));
+            
+            // 调整主内容区域的边距
+            adjustMainContentPadding();
+            window.addEventListener('resize', adjustMainContentPadding);
+            
+            // 初始化目录状态
+            updateTOCState();
+            
+            // 添加滚轮缩放支持
+            pdfViewer.addEventListener('wheel', handleWheelZoom, { passive: false });
+        });
+        
+        // 处理滚轮缩放
+        function handleWheelZoom(e) {
+            if (e.ctrlKey) {
+                e.preventDefault();
+                changeZoom(e.deltaY < 0 ? 1.1 : 0.9);
+            }
+        }
+        
+        // 调整主内容区域的边距
+        function adjustMainContentPadding() {
+            const mainElement = document.querySelector('main');
+            if (window.innerWidth >= 768) { // md断点
+                mainElement.classList.add('md:pr-64');
+            } else {
+                mainElement.classList.remove('md:pr-64');
+            }
+        }
+        
+        // 更新目录状态
+        function updateTOCState() {
+            // 在移动设备上默认隐藏目录
+            if (window.innerWidth < 768) {
+                isTOCVisible = false;
+                tocContainer.style.transform = 'translateX(100%)';
+            } else {
+                isTOCVisible = true;
+                tocContainer.style.transform = 'translateX(0)';
+            }
+            updateTOCIcon();
+        }
+        
+        // 更新目录图标状态
+        function updateTOCIcon() {
+            tocToggle.style.transform = isTOCVisible ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+        
+        // 切换目录显示状态
+        function toggleTOC() {
+            isTOCVisible = !isTOCVisible;
+            tocContainer.style.transform = isTOCVisible ? 'translateX(0)' : 'translateX(100%)';
+            updateTOCIcon();
+        }
+        
+        // 处理文件选择
+        function handleFileSelect(evt) {
+            const file = evt.target.files[0];
+            if (!file) return;
+            
+            // 重置状态
+            pdfDoc = null;
+            pageElements = [];
+            extractedTitles = [];
+            
+            // 更新界面显示
+            pdfViewer.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-[60vh]">
+                    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mb-3"></div>
+                    <h3 class="text-base font-medium">正在加载 PDF 文件</h3>
+                    <p class="mt-1.5 text-xs text-gray-500">${file.name}</p>
+                    <div class="mt-3 w-56 bg-gray-200 rounded-full h-2">
+                        <div id="loadingProgress" class="bg-primary h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <p id="loadingText" class="mt-1.5 text-xs text-gray-500">准备中...</p>
+                </div>
+            `;
+            
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const typedArray = new Uint8Array(evt.target.result);
+                    loadPDF(typedArray);
+                } catch (error) {
+                    console.error('读取文件时出错:', error);
+                    showError(`读取文件时出错: ${error.message}`);
+                }
+            };
+            reader.onerror = function() {
+                showError(`文件读取失败: ${reader.error.message}`);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+        
+        // 显示错误信息
+        function showError(message) {
+            pdfViewer.innerHTML = `<div class="text-center p-6 text-red-600">
+                <i class="fa fa-exclamation-triangle text-3xl mb-3"></i>
+                <h3 class="text-base font-medium">发生错误</h3>
+                <p class="mt-1.5 text-sm">${message}</p>
+            </div>`;
+        }
+        
+        // 加载PDF
+        function loadPDF(pdfData) {
+            const loadingProgress = document.getElementById('loadingProgress');
+            const loadingText = document.getElementById('loadingText');
+            
+            // 显示加载进度
+            const loadingTask = pdfjsLib.getDocument({
+                data: pdfData,
+                // 监听加载进度
+                progress: function(progressData) {
+                    const percent = Math.round((progressData.loaded / progressData.total) * 100);
+                    if (loadingProgress) loadingProgress.style.width = `${percent}%`;
+                    if (loadingText) loadingText.textContent = `已加载 ${percent}%`;
+                }
+            });
+            
+            loadingTask.promise.then(function(pdf) {
+                pdfDoc = pdf;
+                
+                // 更新界面显示
+                if (loadingText) loadingText.textContent = `正在解析文档内容...`;
+                
+                // 渲染所有页面
+                renderAllPages();
+                
+                // 提取文本并生成目录
+                extractTextAndGenerateTOC(pdfDoc).then(() => {
+                    // 目录生成完成后更新界面
+                    if (loadingText) loadingText.textContent = `文档加载完成`;
+                });
+            }).catch(function(error) {
+                console.error('加载PDF时出错:', error);
+                showError(`无法加载PDF文件: ${error.message}`);
+            });
+        }
+        
+        // 渲染所有页面 - 优化性能
+        function renderAllPages() {
+            if (!pdfDoc || isRendering) return;
+
+            isRendering = true;
+            pdfViewer.innerHTML = '<div id="pdfContainer" class="pdf-container"></div>';
+            const pdfContainer = document.getElementById('pdfContainer');
+            pageElements = [];
+
+            // 计算总页数，用于进度显示
+            const totalPages = pdfDoc.numPages;
+            let renderedPages = 0;
+
+            // 优化：使用requestAnimationFrame提高渲染性能
+            function renderPage(pageNum) {
+                requestAnimationFrame(() => {
+                    pdfDoc.getPage(pageNum).then(function(page) {
+                        // 提高缩放比例，这里可以根据需要调整
+                        const viewport = page.getViewport({ scale: zoom * 2.0 }); 
+
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.className = 'pdf-page bg-white my-2';
+                        canvas.dataset.pageNumber = pageNum;
+
+                        // 处理设备像素比，提高清晰度
+                        const devicePixelRatio = window.devicePixelRatio || 1;
+                        canvas.width = viewport.width * devicePixelRatio;
+                        canvas.height = viewport.height * devicePixelRatio;
+                        canvas.style.width = '100%';
+
+                        context.scale(devicePixelRatio, devicePixelRatio);
+
+                        // 添加淡入动画
+                        canvas.style.opacity = '0';
+                        canvas.style.transition = 'opacity 0.3s ease';
+
+                        pdfContainer.appendChild(canvas);
+                        pageElements[pageNum-1] = canvas;
+
+                        // 渲染PDF页面
+                        const renderContext = {
+                            canvasContext: context,
+                            viewport: viewport
+                        };
+
+                        const renderTask = page.render(renderContext);
+                        renderTask.promise.then(() => {
+                            renderedPages++;
+
+                            // 更新渲染进度
+                            const loadingProgress = document.getElementById('loadingProgress');
+                            const loadingText = document.getElementById('loadingText');
+                            if (loadingProgress && loadingText) {
+                                const percent = Math.round((renderedPages / totalPages) * 100);
+                                loadingProgress.style.width = `${percent}%`;
+                                loadingText.textContent = `正在渲染页面 ${renderedPages}/${totalPages}`;
+                            }
+
+                            // 淡入效果
+                            canvas.style.opacity = '1';
+
+                            // 渲染下一页
+                            if (renderedPages < totalPages) {
+                                renderPage(renderedPages + 1);
+                            } else {
+                                // 所有页面渲染完成后
+                                isRendering = false;
+                                // 平滑滚动到第一页
+                                if (pageElements.length > 0) {
+                                    setTimeout(() => {
+                                        pageElements[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    }, 300);
+                                }
+                            }
+                        });
+                    });
+                });
+            }
+
+            // 开始渲染第一页
+            if (totalPages > 0) {
+                renderPage(1);
+            } else {
+                isRendering = false;
+                showError('PDF文件为空');
+            }
+        }
+        
+        // 更改缩放级别 - 优化性能
+        function changeZoom(factor) {
+            if (isRendering) return;
+            
+            zoom *= factor;
+            // 限制最小和最大缩放
+            zoom = Math.max(0.5, Math.min(zoom, 4));
+            const zoomPercentage = Math.round(zoom * 100);
+            zoomLevel.textContent = `${zoomPercentage}%`;
+            
+            // 优化：添加CSS过渡效果，避免重新渲染
+            const pdfContainer = document.getElementById('pdfContainer');
+            if (pdfContainer) {
+                pdfContainer.style.transition = 'transform 0.3s ease';
+                pdfContainer.style.transform = `scale(${zoom})`;
+                pdfContainer.style.transformOrigin = 'top center';
+                
+                // 调整容器高度以适应缩放
+                pdfContainer.style.height = `${pdfContainer.scrollHeight / zoom}px`;
+            }
+        }
+        
+        // 提取文本并生成目录（返回Promise）
+        function extractTextAndGenerateTOC(pdfDoc) {
+            return new Promise((resolve) => {
+                // 提取所有页面的文本
+                const pagePromises = [];
+                for (let i = 1; i <= pdfDoc.numPages; i++) {
+                    pagePromises.push(
+                        pdfDoc.getPage(i).then(function(page) {
+                            return page.getTextContent().then(function(textContent) {
+                                const textItems = textContent.items;
+                                const pageHeadings = analyzePageText(textItems);
+                                
+                                return { 
+                                    page: i, 
+                                    textItems: textItems,
+                                    headings: pageHeadings 
+                                };
+                            });
+                        }).catch(error => {
+                            console.error(`提取第 ${i} 页文本时出错:`, error);
+                            return { page: i, textItems: [], headings: [] };
+                        })
+                    );
+                }
+                
+                // 当所有页面的文本都提取完成后
+                Promise.all(pagePromises).then(function(results) {
+                    // 合并所有页面的标题
+                    let allHeadings = [];
+                    results.forEach(result => {
+                        allHeadings = allHeadings.concat(
+                            result.headings.map(h => ({...h, page: result.page}))
+                        );
+                    });
+                    
+                    // 构建标题层次结构
+                    const hierarchicalHeadings = buildHeadingHierarchy(allHeadings);
+                    
+                    // 生成目录
+                    generateTOC(hierarchicalHeadings);
+                    console.log('识别到的标题结构:', hierarchicalHeadings);
+                    resolve();
+                }).catch(error => {
+                    console.error('提取文本并生成目录时出错:', error);
+                    showError('解析PDF内容时出错');
+                    resolve();
+                });
+            });
+        }
+        
+        // 分析页面文本，识别标题 - 恢复原始版本
+        function analyzePageText(textItems) {
+            // 定义中文数字和匹配模式
+            const chineseNumbers = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', 
+                                   '十一', '十二', '十三', '十四', '十五', '十六', '十七', '十八', '十九', '二十',
+                                   '廿', '卅', '卌', '百', '千', '万', '亿'];
+            const chineseNumberPattern = new RegExp(`^[${chineseNumbers.join('')}]+[、.]`);
+            
+            // 收集所有文本的字体大小，用于确定最大字体
+            const fontSizes = textItems.map(item => {
+                const transform = item.transform;
+                return Math.abs(transform[0]);
+            });
+            
+            // 计算最大字体大小和平均字体大小
+            const maxFontSize = Math.max(...fontSizes);
+            
+            // 识别标题
+            const headings = [];
+            
+            textItems.forEach(item => {
+                const text = item.str.trim();
+                
+                // 跳过空文本
+                if (!text) return;
+                
+                // 提取当前文本的字体大小
+                const transform = item.transform;
+                const fontSize = Math.abs(transform[0]);
+                
+                // 检查是否以中文数字开头
+                const startsWithChineseNumber = chineseNumberPattern.test(text);
+                
+                // 检查文本长度是否小于15个字符
+                const isShortText = text.length < 15;
+
+                // 检查字体大小是否等于最大字体
+                const isMaxFontSize = Math.abs(fontSize - maxFontSize) < 0.1; // 考虑浮点数精度问题
+                
+                // 确定标题级别
+                let level = 0;
+                
+                // 子栏目识别逻辑：
+                // 1. 只识别字体大小等于最大字体的文本
+                // 2. 文本长度小于15个字符
+                // 3. 以中文数字开头
+                if (isMaxFontSize && isShortText && startsWithChineseNumber) {
+                    level = 1;
+                }
+                
+                if (level > 0) {
+                    headings.push({
+                        text,
+                        level,
+                        position: { x: item.transform[4], y: item.transform[5] },
+                        fontSize: fontSize
+                    });
+                }
+            });
+            
+            return headings;
+        }
+        
+         // 构建标题层次结构
+        function buildHeadingHierarchy(flatHeadings) {
+            const root = { level: 0, children: [] };
+            const stack = [root];
+            
+            flatHeadings.forEach(heading => {
+                // 找到合适的父节点
+                while (stack.length > 1 && stack[stack.length - 1].level >= heading.level) {
+                    stack.pop();
+                }
+                
+                const parent = stack[stack.length - 1];
+                if (!parent.children) parent.children = [];
+                
+                const newNode = { ...heading, children: [] };
+                parent.children.push(newNode);
+                stack.push(newNode);
+            });
+            
+            return root.children;
+        }
+        
+        // 生成目录（按一级标题分组）
+        function generateTOC(headings) {
+            tableOfContents.innerHTML = '';
+            
+            if (!headings || headings.length === 0) {
+                const noTitlesEl = document.createElement('p');
+                noTitlesEl.className = 'text-white/60 italic text-sm';
+                noTitlesEl.textContent = '未找到符合条件的标题';
+                tableOfContents.appendChild(noTitlesEl);
+                return;
+            }
+            
+            // 生成目录
+            headings.forEach(heading => {
+                const groupEl = document.createElement('div');
+                groupEl.className = 'mb-3';
+                
+                // 一级标题
+                const groupTitleEl = document.createElement('div');
+                groupTitleEl.className = 'toc-item font-bold text-sm';
+                groupTitleEl.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <span class="truncate-text">${heading.text}</span>
+                        <span class="text-xs text-white/60 bg-white/10 px-1.5 py-0.5 rounded">${heading.page}</span>
+                    </div>
+                `;
+                groupTitleEl.addEventListener('click', () => {
+                    goToPage(heading.page);
+                });
+                groupEl.appendChild(groupTitleEl);
+                
+                // 子标题
+                if (heading.children && heading.children.length > 0) {
+                    const subitemsEl = document.createElement('div');
+                    subitemsEl.className = 'ml-2 mt-0.5';
+                    
+                    // 递归生成子标题
+                    generateSubitems(heading.children, subitemsEl);
+                    
+                    groupEl.appendChild(subitemsEl);
+                }
+                
+                tableOfContents.appendChild(groupEl);
+            });
+        }
+        
+        // 递归生成子标题
+        function generateSubitems(subitems, container) {
+            subitems.forEach(subitem => {
+                const subitemEl = document.createElement('div');
+                // 根据标题级别调整样式
+                subitemEl.className = `toc-subitem ${subitem.level === 2 ? 'font-medium' : 'text-xs'}`;
+                subitemEl.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <span class="truncate-text">${subitem.text}</span>
+                        <span class="text-xs text-white/60 bg-white/10 px-1.5 py-0.5 rounded">${subitem.page}</span>
+                    </div>
+                `;
+                subitemEl.addEventListener('click', () => {
+                    goToPage(subitem.page);
+                });
+                container.appendChild(subitemEl);
+                
+                // 递归处理子标题的子标题
+                if (subitem.children && subitem.children.length > 0) {
+                    const childContainer = document.createElement('div');
+                    childContainer.className = 'ml-1.5 mt-0.5';
+                    generateSubitems(subitem.children, childContainer);
+                    container.appendChild(childContainer);
+                }
+            });
+        }
+  
+        // 跳转到指定页面
+        function goToPage(pageNum) {
+            if (!pdfDoc || pageNum < 1 || pageNum > pdfDoc.numPages) return;
+            
+            const pageElement = pageElements[pageNum - 1];
+            if (pageElement) {
+                pageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                // 添加高亮效果
+                pageElement.classList.add('ring-4', 'ring-accent');
+                setTimeout(() => {
+                    pageElement.classList.remove('ring-4', 'ring-accent');
+                }, 1500);
+            }
+        }
+        
+        // 执行搜索
+        function performSearch() {
+            const searchTerm = searchInput.value.trim();
+            if (!searchTerm || !pdfDoc) return;
+            
+            searchResults = [];
+            currentHighlightIndex = -1;
+            
+            // 显示搜索中状态
+            searchResultsEl.classList.remove('hidden');
+            searchResultsList.innerHTML = `
+                <div class="flex items-center justify-center py-8">
+                    <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                    <span class="ml-2 text-sm text-gray-500">搜索中...</span>
+                </div>
+            `;
+            
+            const searchPromises = [];
+            for (let i = 1; i <= pdfDoc.numPages; i++) {
+                searchPromises.push(
+                    pdfDoc.getPage(i).then(function(page) {
+                        return page.getTextContent().then(function(textContent) {
+                            const pageText = textContent.items.map(item => item.str).join(' ');
+                            const matches = pageText.match(new RegExp(searchTerm, 'gi'));
+                            
+                            if (matches && matches.length > 0) {
+                                searchResults.push({
+                                    page: i,
+                                    text: pageText,
+                                    count: matches.length
+                                });
+                            }
+                            
+                            return { page: i, matches: matches };
+                        });
+                    })
+                );
+            }
+            
+            Promise.all(searchPromises).then(function() {
+                displaySearchResults();
+                
+                if (searchResults.length > 0) {
+                    currentHighlightIndex = 0;
+                    highlightSearchResult();
+                }
+            }).catch(error => {
+                console.error('搜索时出错:', error);
+                searchResultsList.innerHTML = `
+                    <p class="text-red-500 italic text-sm">搜索过程中出错: ${error.message}</p>
+                `;
+            });
+        }
+        
+        // 显示搜索结果
+        function displaySearchResults() {
+            searchResultsList.innerHTML = '';
+            
+            if (searchResults.length === 0) {
+                const noResultsEl = document.createElement('p');
+                noResultsEl.className = 'text-gray-500 italic text-sm';
+                noResultsEl.textContent = '未找到匹配结果';
+                searchResultsList.appendChild(noResultsEl);
+                return;
+            }
+            
+            const resultsList = document.createElement('ul');
+            resultsList.className = 'space-y-1';
+            
+            searchResults.forEach((result, index) => {
+                const listItem = document.createElement('li');
+                listItem.className = `rounded cursor-pointer hover:bg-primary/5 p-1.5 ${index === currentHighlightIndex ? 'bg-primary/10' : ''}`;
+                listItem.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <span class="font-medium text-sm">第 ${result.page} 页</span>
+                        <span class="text-xs">${result.count} 个匹配</span>
+                    </div>
+                `;
+                
+                listItem.addEventListener('click', () => {
+                    currentHighlightIndex = index;
+                    highlightSearchResult();
+                    displaySearchResults();
+                });
+                
+                resultsList.appendChild(listItem);
+            });
+            
+            searchResultsList.appendChild(resultsList);
+        }
+        
+        // 高亮显示搜索结果
+        function highlightSearchResult() {
+            if (currentHighlightIndex < 0 || currentHighlightIndex >= searchResults.length) return;
+            
+            const result = searchResults[currentHighlightIndex];
+            goToPage(result.page);
+            console.log('高亮显示搜索结果:', result);
+        }
+    </script>
+</body>
+</html>

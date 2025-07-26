@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>笔记查看器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        // Tailwind 配置
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#10b981',
+                        neutral: '#f3f4f6',
+                        'neutral-dark': '#1f2937'
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .sidebar-shadow {
+                box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+            }
+            .hover-scale {
+                transition: transform 0.2s ease-in-out;
+            }
+            .hover-scale:hover {
+                transform: scale(1.05);
+            }
+            .search-highlight {
+                background-color: #fff3cd;
+                color: #856404;
+                border-radius: 2px;
+                padding: 0 2px;
+            }
+            .dark .search-highlight {
+                background-color: #5c4b00;
+                color: #fff3cd;
+            }
+            .json-key {
+                color: #c2185b;
+            }
+            .json-value {
+                color: #009688;
+            }
+            .json-string {
+                color: #4caf50;
+            }
+            .dark .json-key {
+                color: #f06292;
+            }
+            .dark .json-value {
+                color: #4db6ac;
+            }
+            .dark .json-string {
+                color: #a5d6a7;
+            }
+            .title-block {
+                margin-bottom: 2rem;
+                padding-bottom: 1.5rem;
+                border-bottom: 1px solid #e5e7eb;
+                dark:border-gray-700;
+            }
+            .title-block:last-child {
+                border-bottom: none;
+                margin-bottom: 0;
+                padding-bottom: 0;
+            }
+            .floating-btn {
+                position: fixed;
+                bottom: 2rem;
+                right: 2rem;
+                z-index: 40;
+                transition: all 0.3s ease;
+            }
+            .floating-btn:hover {
+                transform: scale(1.1);
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            }
+        }
+    </style>
+</head>
+<body class="font-inter bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 transition-colors duration-300">
+    <!-- 顶部导航栏 -->
+    <header class="sticky top-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-book text-primary text-2xl"></i>
+                <h1 class="text-xl font-bold">笔记查看器</h1>
+            </div>
+            
+            <!-- 搜索框 -->
+            <div class="relative flex-1 max-w-md mx-4">
+                <input 
+                    type="text" 
+                    id="search-input"
+                    placeholder="搜索笔记内容..." 
+                    class="w-full py-2 px-4 pl-10 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                >
+                <i class="fa fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <!-- 深色模式切换 -->
+                <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <i class="fa fa-moon-o dark:hidden text-gray-600"></i>
+                    <i class="fa fa-sun-o hidden dark:block text-yellow-400"></i>
+                </button>
+                
+                <!-- 上传按钮 -->
+                <label for="file-upload" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer">
+                    <i class="fa fa-upload text-gray-600 dark:text-gray-300"></i>
+                </label>
+                <input type="file" id="file-upload" accept=".txt,.md,.json" class="hidden">
+                
+                <!-- JSON转文档按钮 -->
+                <button id="json-to-doc" class="hidden p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <i class="fa fa-file-text-o text-gray-600 dark:text-gray-300"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-6 flex flex-col lg:flex-row gap-6">
+        <!-- 文档内容区域 -->
+        <div id="document-container" class="flex-1 min-h-[80vh]">
+            <div id="document-content" class="prose max-w-none dark:prose-invert prose-lg">
+                <!-- 内容将通过JavaScript动态生成 -->
+            </div>
+        </div>
+
+        <!-- 侧边导航栏 - 右侧 -->
+        <div id="sidebar" class="fixed lg:static right-0 top-0 bottom-0 w-64 bg-white dark:bg-gray-800 shadow-lg transform translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out z-30 overflow-y-auto sidebar-shadow">
+            <div class="p-4">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="font-bold text-lg">目录导航</h2>
+                    <button id="close-sidebar" class="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors lg:hidden">
+                        <i class="fa fa-times text-gray-600 dark:text-gray-300"></i>
+                    </button>
+                </div>
+                
+                <div id="table-of-contents" class="space-y-2">
+                    <!-- 目录将通过JavaScript动态生成 -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 右下角目录按钮 -->
+    <button id="sidebar-toggle" class="floating-btn bg-primary hover-scale text-white p-3 rounded-full shadow-lg">
+        <i class="fa fa-list-ul text-xl"></i>
+    </button>
+
+    <!-- 遮罩层 -->
+    <div id="overlay" class="fixed inset-0 bg-black/50 z-20 hidden opacity-0 transition-opacity duration-300 lg:hidden"></div>
+
+    <script>
+        // DOM元素
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const sidebar = document.getElementById('sidebar');
+        const closeSidebar = document.getElementById('close-sidebar');
+        const overlay = document.getElementById('overlay');
+        const themeToggle = document.getElementById('theme-toggle');
+        const searchInput = document.getElementById('search-input');
+        const documentContent = document.getElementById('document-content');
+        const fileUpload = document.getElementById('file-upload');
+        const jsonToDocButton = document.getElementById('json-to-doc');
+        
+        // 当前加载的JSON数据
+        let currentJsonData = null;
+        
+        // 示例内容
+        const exampleContent = `
+一、引言
+笔记查看器是一个功能丰富的工具，旨在提供出色的笔记阅读体验。
+
+二、功能介绍
+1. 全文搜索：支持在笔记内容中进行快速搜索
+2. 自动生成目录：根据标题自动生成导航目录
+3. 深色模式：支持明暗主题切换
+
+三、使用方法
+1. 上传文件：点击右上角上传按钮选择笔记文件
+2. 搜索内容：使用顶部搜索框进行关键词搜索
+3. 浏览目录：点击顶部的目录按钮展开关闭目录导航
+
+四、技术细节
+笔记查看器基于现代Web技术构建，使用了以下技术栈：
+- 前端框架：原生JavaScript
+- 样式工具：Tailwind CSS
+- 代码高亮：highlight.js
+- Markdown解析：marked.js
+
+五、未来计划
+1. 支持更多文件格式
+2. 增加笔记编辑功能
+3. 实现云端同步
+`;
+        
+        // 侧边栏切换
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('translate-x-full');
+            overlay.classList.toggle('hidden');
+            // 延迟添加透明度，使过渡效果更平滑
+            setTimeout(() => {
+                overlay.classList.toggle('opacity-0');
+            }, 10);
+        });
+        
+        closeSidebar.addEventListener('click', () => {
+            sidebar.classList.add('translate-x-full');
+            overlay.classList.add('opacity-0');
+            // 延迟隐藏遮罩层，使过渡效果更平滑
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+            }, 300);
+        });
+        
+        overlay.addEventListener('click', () => {
+            sidebar.classList.add('translate-x-full');
+            overlay.classList.add('opacity-0');
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+            }, 300);
+        });
+        
+        // 深色模式切换
+        themeToggle.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+        });
+        
+        // 初始化主题
+        if (localStorage.getItem('theme') === 'dark' || 
+            (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+        
+        // 生成目录
+        function generateTableOfContents() {
+            const headings = documentContent.querySelectorAll('h1, h2, h3, h4, h5, h6');
+            const toc = document.getElementById('table-of-contents');
+            toc.innerHTML = '';
+            
+            // 如果没有标题，显示提示信息
+            if (headings.length === 0) {
+                toc.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm italic">无目录内容</p>';
+                return;
+            }
+            
+            headings.forEach(heading => {
+                // 确保每个标题都有id
+                if (!heading.id) {
+                    const idContent = extractTitleContentWithoutNumber(heading.textContent).trim().replace(/\s+/g, '-').toLowerCase();
+                    heading.id = idContent;
+                }
+                
+                // 根据标题级别设置缩进
+                const level = parseInt(heading.tagName.charAt(1));
+                const indent = (level - 1) * 8; // 每级缩进8px
+                
+                const link = document.createElement('a');
+                link.href = `#${heading.id}`;
+                link.textContent = heading.textContent;
+                link.classList.add(
+                    'block', 
+                    'py-1', 
+                    'px-2', 
+                    'rounded',
+                    'text-sm',
+                    `ml-[${indent}px]`,
+                    'hover:bg-gray-100',
+                    'dark:hover:bg-gray-700',
+                    'transition-colors'
+                );
+                
+                // 滚动到锚点时平滑滚动
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const target = document.getElementById(heading.id);
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth' });
+                        
+                        // 高亮显示目标标题
+                        target.classList.add('bg-primary/10', 'dark:bg-primary/20', 'rounded');
+                        setTimeout(() => {
+                            target.classList.remove('bg-primary/10', 'dark:bg-primary/20', 'rounded');
+                        }, 2000);
+                        
+                        // 在移动设备上点击目录项后关闭侧边栏
+                        if (window.innerWidth < 1024) {
+                            sidebar.classList.add('translate-x-full');
+                            overlay.classList.add('opacity-0');
+                            setTimeout(() => {
+                                overlay.classList.add('hidden');
+                            }, 300);
+                        }
+                    }
+                });
+                
+                toc.appendChild(link);
+            });
+        }
+        
+        // 全文搜索功能
+        function searchNotes(query) {
+            // 移除之前的高亮
+            document.querySelectorAll('.search-highlight').forEach(el => {
+                el.outerHTML = el.textContent;
+            });
+            
+            if (!query.trim()) return;
+            
+            const textNodes = [];
+            
+            // 递归收集所有文本节点
+            function collectTextNodes(node) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    // 跳过脚本和样式标签内的文本
+                    if (node.parentElement.tagName.toLowerCase() !== 'script' && 
+                        node.parentElement.tagName.toLowerCase() !== 'style') {
+                        textNodes.push(node);
+                    }
+                } else {
+                    for (let i = 0; i < node.childNodes.length; i++) {
+                        collectTextNodes(node.childNodes[i]);
+                    }
+                }
+            }
+            
+            collectTextNodes(documentContent);
+            
+            // 对每个文本节点进行搜索和高亮
+            const regex = new RegExp(query, 'gi');
+            let matchCount = 0;
+            
+            textNodes.forEach(textNode => {
+                const text = textNode.textContent;
+                if (regex.test(text)) {
+                    const parent = textNode.parentNode;
+                    const fragment = document.createDocumentFragment();
+                    
+                    let lastIndex = 0;
+                    regex.lastIndex = 0;
+                    
+                    let match;
+                    while ((match = regex.exec(text)) !== null) {
+                        // 添加匹配前的文本
+                        const beforeMatch = document.createTextNode(text.substring(lastIndex, match.index));
+                        fragment.appendChild(beforeMatch);
+                        
+                        // 添加高亮匹配文本
+                        const highlightSpan = document.createElement('span');
+                        highlightSpan.className = 'search-highlight';
+                        highlightSpan.textContent = match[0];
+                        fragment.appendChild(highlightSpan);
+                        
+                        lastIndex = regex.lastIndex;
+                    }
+                    
+                    // 添加匹配后的文本
+                    const afterMatch = document.createTextNode(text.substring(lastIndex));
+                    fragment.appendChild(afterMatch);
+                    
+                    // 替换原始文本节点
+                    parent.replaceChild(fragment, textNode);
+                    matchCount++;
+                }
+            });
+            
+            // 如果有匹配结果，滚动到第一个匹配处
+            if (matchCount > 0) {
+                const firstMatch = document.querySelector('.search-highlight');
+                if (firstMatch) {
+                    // 确保元素在视口中可见
+                    setTimeout(() => {
+                        firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        
+                        // 闪烁效果
+                        firstMatch.classList.add('animate-pulse');
+                        setTimeout(() => {
+                            firstMatch.classList.remove('animate-pulse');
+                        }, 1500);
+                    }, 100);
+                }
+            }
+            
+            return matchCount;
+        }
+        
+        // 格式化JSON为可折叠的树形结构
+        function formatJSON(jsonData, level = 0) {
+            if (jsonData === null) return '<span class="json-value">null</span>';
+            if (typeof jsonData === 'boolean') return `<span class="json-value">${jsonData}</span>`;
+            if (typeof jsonData === 'number') return `<span class="json-value">${jsonData}</span>`;
+            if (typeof jsonData === 'string') return `<span class="json-string">"${escapeHTML(jsonData)}"</span>`;
+            
+            if (Array.isArray(jsonData)) {
+                if (jsonData.length === 0) return '[]';
+                
+                const indent = '  '.repeat(level + 1);
+                let result = '[<span class="cursor-pointer json-toggle" data-target="array-' + level + '">...</span><div id="array-' + level + '" class="hidden pl-4">';
+                
+                jsonData.forEach((item, index) => {
+                    result += `<div class="json-item">${indent}${formatJSON(item, level + 1)}${index < jsonData.length - 1 ? ',' : ''}</div>`;
+                });
+                
+                result += `${'  '.repeat(level)}]</div>`;
+                return result;
+            }
+            
+            // 对象
+            const keys = Object.keys(jsonData);
+            if (keys.length === 0) return '{}';
+            
+            const indent = '  '.repeat(level + 1);
+            let result = '{<span class="cursor-pointer json-toggle" data-target="object-' + level + '">...</span><div id="object-' + level + '" class="hidden pl-4">';
+            
+            keys.forEach((key, index) => {
+                result += `<div class="json-item">${indent}<span class="json-key">"${escapeHTML(key)}"</span>: ${formatJSON(jsonData[key], level + 1)}${index < keys.length - 1 ? ',' : ''}</div>`;
+            });
+            
+            result += `${'  '.repeat(level)}}</div>`;
+            return result;
+        }
+        
+        // 检查文本是否为标题格式（以中文数字序号开头，以换行符结束）
+        function isTitle(text) {
+            // 匹配中文数字序号开头，并且不是以句号结尾（避免误判普通句子）
+            const titleRegex = /^[一二三四五六七八九十百千万]+、\s*.+$/;
+            return titleRegex.test(text);
+        }
+        
+        // 从标题文本中提取实际标题内容（保留序号部分）
+        function extractTitleContent(text) {
+            // 直接返回完整标题，不再移除序号部分
+            return text;
+        }
+        
+        // 从标题文本中提取不含序号的内容（用于生成ID）
+        function extractTitleContentWithoutNumber(text) {
+            const titleRegex = /^([一二三四五六七八九十百千万]+、)\s*(.+)$/;
+            const match = text.match(titleRegex);
+            return match ? match[2] : text;
+        }
+        
+        // JSON转文档
+        function jsonToDocument(jsonData) {
+            let documentHTML = '';
+            
+            // 提取所有text字段内容并处理换行符
+            const textContents = extractTextFields(jsonData);
+            
+            // 处理提取的文本内容，生成文档
+            documentHTML += processTextContents(textContents);
+            
+            return documentHTML;
+        }
+        
+        // 提取JSON中所有text字段内容
+        function extractTextFields(jsonData) {
+            const textContents = [];
+            
+            function traverse(obj) {
+                if (typeof obj !== 'object' || obj === null) return;
+                
+                if (Array.isArray(obj)) {
+                    obj.forEach(item => traverse(item));
+                } else {
+                    if (obj.text !== undefined) {
+                        // 处理换行符，从换行符断开文本
+                        const lines = obj.text
+                            .replace(/\\n/g, '\n')  // 处理转义的换行符
+                            .split('\n');
+                        
+                        textContents.push(...lines);
+                    }
+                    
+                    // 递归处理其他属性
+                    Object.keys(obj).forEach(key => {
+                        traverse(obj[key]);
+                    });
+                }
+            }
+            
+            traverse(jsonData);
+            return textContents;
+        }
+        
+        // 处理提取的文本内容，生成文档
+        function processTextContents(textContents) {
+            let html = '';
+            let currentBlock = [];
+            let currentTitle = null;
+            
+            textContents.forEach((line, index) => {
+                // 跳过空行
+                if (line.trim() === '') return;
+                
+                if (isTitle(line)) {
+                    // 如果当前有累积的块内容，先输出
+                    if (currentTitle && currentBlock.length > 0) {
+                        html += createTitleBlock(currentTitle, currentBlock);
+                        currentBlock = [];
+                    }
+                    
+                    // 这是一个新标题
+                    currentTitle = line;
+                } else {
+                    // 这是普通文本内容，添加到当前块
+                    currentBlock.push(line);
+                    
+                    // 如果是最后一行，输出当前块
+                    if (index === textContents.length - 1 && currentTitle) {
+                        html += createTitleBlock(currentTitle, currentBlock);
+                    }
+                }
+            });
+            
+            return html;
+        }
+        
+        // 创建标题块
+        function createTitleBlock(title, contents) {
+            const titleContent = extractTitleContent(title);
+            const titleId = escapeHTML(extractTitleContentWithoutNumber(title).toLowerCase().replace(/\s+/g, '-'));
+            
+            let blockHtml = `<div class="title-block">`;
+            blockHtml += `<h2 id="${titleId}">${titleContent}</h2>`;
+            
+            // 处理内容
+            if (contents && contents.length > 0) {
+                blockHtml += `<div class="block-content">`;
+                
+                // 检查内容是否包含列表标记
+                let isList = false;
+                let listItems = [];
+                
+                contents.forEach(line => {
+                    // 检查是否为列表项
+                    const listRegex = /^\s*[-*+]\s+|^\s*\d+\.\s+/;
+                    if (listRegex.test(line)) {
+                        if (!isList) {
+                            // 开始新列表
+                            isList = true;
+                            listItems = [];
+                        }
+                        listItems.push(line);
+                    } else {
+                        // 不是列表项
+                        if (isList) {
+                            // 结束之前的列表
+                            blockHtml += createList(listItems);
+                            isList = false;
+                            listItems = [];
+                        }
+                        
+                        // 添加普通段落
+                        blockHtml += `<p>${line}</p>`;
+                    }
+                });
+                
+                // 处理剩余的列表项
+                if (isList && listItems.length > 0) {
+                    blockHtml += createList(listItems);
+                }
+                
+                blockHtml += `</div>`;
+            }
+            
+            blockHtml += `</div>`;
+            return blockHtml;
+        }
+        
+        // 创建列表
+        function createList(items) {
+            let listHtml = '';
+            let isOrdered = /^\s*\d+\.\s+/.test(items[0]);
+            
+            if (isOrdered) {
+                listHtml += `<ol class="list-decimal pl-5 space-y-1">`;
+            } else {
+                listHtml += `<ul class="list-disc pl-5 space-y-1">`;
+            }
+            
+            items.forEach(item => {
+                // 移除列表标记
+                const content = item.replace(/^\s*[-*+]\s+|^\s*\d+\.\s+/, '');
+                listHtml += `<li>${content}</li>`;
+            });
+            
+            if (isOrdered) {
+                listHtml += `</ol>`;
+            } else {
+                listHtml += `</ul>`;
+            }
+            
+            return listHtml;
+        }
+        
+        // 文件上传处理
+        fileUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            
+            reader.onload = (event) => {
+                const content = event.target.result;
+                
+                // 检查文件类型
+                if (file.name.endsWith('.md')) {
+                    // 如果是Markdown文件，尝试转换为HTML
+                    documentContent.innerHTML = marked.parse(content);
+                    jsonToDocButton.classList.add('hidden');
+                    currentJsonData = null;
+                } else if (file.name.endsWith('.json')) {
+                    try {
+                        const jsonData = JSON.parse(content);
+                        currentJsonData = jsonData;
+                        
+                        // 生成JSON树形结构
+                        const jsonTree = formatJSON(jsonData);
+                        
+                        // 显示JSON数据
+                        documentContent.innerHTML = `
+                            <h1 id="json-data">JSON数据</h1>
+                            <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto font-mono text-sm">
+                                <pre>${jsonTree}</pre>
+                            </div>
+                            <div class="mt-4">
+                                <button id="convert-to-doc" class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                                    <i class="fa fa-file-text-o mr-2"></i>转换为文档
+                                </button>
+                            </div>
+                        `;
+                        
+                        // 添加JSON折叠/展开功能
+                        document.querySelectorAll('.json-toggle').forEach(toggle => {
+                            toggle.addEventListener('click', () => {
+                                const targetId = toggle.getAttribute('data-target');
+                                const target = document.getElementById(targetId);
+                                
+                                if (target.classList.contains('hidden')) {
+                                    target.classList.remove('hidden');
+                                    toggle.textContent = '-';
+                                } else {
+                                    target.classList.add('hidden');
+                                    toggle.textContent = '...';
+                                }
+                            });
+                        });
+                        
+                        // 添加转换按钮事件
+                        document.getElementById('convert-to-doc').addEventListener('click', () => {
+                            documentContent.innerHTML = jsonToDocument(currentJsonData);
+                            generateTableOfContents();
+                        });
+                        
+                        jsonToDocButton.classList.remove('hidden');
+                        
+                    } catch (error) {
+                        documentContent.innerHTML = `
+                            <h1>JSON解析错误</h1>
+                            <p class="text-red-600">无法解析JSON文件: ${error.message}</p>
+                            <pre class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto">${escapeHTML(content)}</pre>
+                        `;
+                        jsonToDocButton.classList.add('hidden');
+                        currentJsonData = null;
+                    }
+                } else {
+                    // 普通文本文件，处理为标题块格式
+                    const lines = content
+                        .replace(/\\n/g, '\n')  // 处理转义的换行符
+                        .split('\n');
+                    
+                    documentContent.innerHTML = processTextContents(lines);
+                    jsonToDocButton.classList.add('hidden');
+                    currentJsonData = null;
+                }
+                
+                // 更新页面标题
+                document.title = `笔记查看器 - ${file.name}`;
+                
+                // 重新生成目录
+                generateTableOfContents();
+                
+                // 重置搜索框
+                searchInput.value = '';
+            };
+            
+            reader.readAsText(file);
+        });
+        
+        // JSON转文档按钮事件
+        jsonToDocButton.addEventListener('click', () => {
+            if (currentJsonData) {
+                documentContent.innerHTML = jsonToDocument(currentJsonData);
+                generateTableOfContents();
+            }
+        });
+        
+        // 辅助函数：转义HTML
+        function escapeHTML(str) {
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+        
+        // 搜索输入事件
+        searchInput.addEventListener('input', (e) => {
+            searchNotes(e.target.value);
+        });
+        
+        // 页面加载完成后显示示例内容
+        document.addEventListener('DOMContentLoaded', () => {
+            // 处理示例内容
+            const lines = exampleContent.split('\n');
+            documentContent.innerHTML = processTextContents(lines);
+            
+            // 生成目录
+            generateTableOfContents();
+            
+            // 如果有锚点，滚动到对应位置
+            if (window.location.hash) {
+                const target = document.querySelector(window.location.hash);
+                if (target) {
+                    setTimeout(() => {
+                        target.scrollIntoView({ behavior: 'smooth' });
+                    }, 300);
+                }
+            }
+        });
+        
+        // 添加Marked.js库支持Markdown解析
+        (function() {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/marked/marked.min.js';
+            script.onload = function() {
+                // 设置marked选项
+                marked.setOptions({
+                    highlight: function(code, lang) {
+                        if (lang && hljs.getLanguage(lang)) {
+                            return hljs.highlight(code, { language: lang }).value;
+                        }
+                        return hljs.highlightAuto(code).value;
+                    },
+                    breaks: true
+                });
+            };
+            document.head.appendChild(script);
+            
+            // 添加highlight.js库支持代码高亮
+            const hljsScript = document.createElement('script');
+            hljsScript.src = 'https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/lib/highlight.min.js';
+            document.head.appendChild(hljsScript);
+            
+            const hljsStyle = document.createElement('link');
+            hljsStyle.rel = 'stylesheet';
+            hljsStyle.href = 'https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github.min.css';
+            document.head.appendChild(hljsStyle);
+            
+            // 深色模式下的代码高亮样式
+            const hljsDarkStyle = document.createElement('link');
+            hljsDarkStyle.rel = 'stylesheet';
+            hljsDarkStyle.href = 'https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github-dark.min.css';
+            hljsDarkStyle.media = 'screen and (prefers-color-scheme: dark)';
+            document.head.appendChild(hljsDarkStyle);
+        })();
+    </script>
+</body>
+</html>    

@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF to JSON 转换器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .logo {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .description {
+            color: #34495e;
+            font-size: 1.1em;
+        }
+        .feature-section {
+            margin: 40px 0;
+        }
+        .section-title {
+            font-size: 1.5em;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .upload-area {
+            border: 2px dashed #3498db;
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            margin: 30px 0;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .upload-area:hover {
+            background-color: #f8f9fa;
+        }
+        .upload-area.active {
+            background-color: #e8f4fa;
+            border-color: #2980b9;
+        }
+        .upload-icon {
+            font-size: 4em;
+            color: #3498db;
+            margin-bottom: 20px;
+        }
+        .btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1em;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background-color 0.3s;
+            width: 48%; /* 调整按钮宽度 */
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        .btn:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        .faq {
+            margin-top: 40px;
+        }
+        .faq-item {
+            margin-bottom: 20px;
+        }
+        .faq-question {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .steps {
+            margin: 40px 0;
+        }
+        .step {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .step-number {
+            background-color: #3498db;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        .result-section {
+            margin: 40px 0;
+            display: none;
+        }
+        .json-preview {
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 300px;
+            overflow: auto;
+            font-family: Consolas, monospace;
+            font-size: 0.9em;
+        }
+        .progress-bar {
+            height: 30px;
+            background-color: #f3f3f3;
+            border-radius: 4px;
+            margin-top: 20px;
+            overflow: hidden;
+            display: none;
+        }
+        .progress {
+            height: 100%;
+            background-color: #3498db;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .progress-text {
+            margin-top: 10px;
+            text-align: center;
+            font-size: 0.9em;
+            color: #555;
+        }
+        .btn-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">PDF to JSON 转换器</div>
+        <p class="description">将PDF内容转换为结构化JSON格式，并附带页面元数据。非常适合需要从文档存档和报告中获取机器可读数据的开发者。</p>
+    </div>
+
+    <div class="feature-section">
+        <h2 class="section-title">什么是PDF转JSON</h2>
+        <p>这款转换器将PDF文档转换为包含提取文本内容、页面级结构和元数据的JSON格式。非常适合需要为API、数据分析流程和内容迁移项目准备结构化数据的开发者。</p>
+    </div>
+
+    <div class="upload-area" id="uploadArea">
+        <div class="upload-icon">📂</div>
+        <p>点击或拖拽PDF文件到此处上传</p>
+        <input type="file" id="fileInput" accept=".pdf" style="display: none;">
+        <button class="btn" id="selectFileBtn">选择文件</button>
+    </div>
+
+    <div class="progress-bar" id="progressBar">
+        <div class="progress" id="progress"></div>
+    </div>
+    <div class="progress-text" id="progressText">准备转换...</div>
+
+    <div class="result-section" id="resultSection">
+        <h2 class="section-title">转换结果</h2>
+        <div class="json-preview" id="jsonPreview"></div>
+        <div class="btn-container">
+            <button class="btn" id="convertBtn">转换</button>
+            <button class="btn" id="downloadBtn">下载JSON文件</button>
+        </div>
+    </div>
+
+    <div class="steps">
+        <h2 class="section-title">使用方法</h2>
+        <div class="step">
+            <div class="step-number">1</div>
+            <div>上传PDF文件</div>
+        </div>
+        <div class="step">
+            <div class="step-number">2</div>
+            <div>启动转换</div>
+        </div>
+        <div class="step">
+            <div class="step-number">3</div>
+            <div>下载JSON文件</div>
+        </div>
+        <div class="step">
+            <div class="step-number">4</div>
+            <div>使用应用程序或编辑器解析</div>
+        </div>
+    </div>
+
+    <div class="faq">
+        <h2 class="section-title">常见问题</h2>
+        <div class="faq-item">
+            <div class="faq-question">Q: 文本如何组织？</div>
+            <div class="faq-answer">A: 每页文本单独存储，附带页码和字符/词数统计。</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">Q: 是否保留格式？</div>
+            <div class="faq-answer">A: 不保留，仅转换纯文本内容。加粗/斜体等格式不会被保留。</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">Q: 如何处理表格？</div>
+            <div class="faq-answer">A: 表格转为纯文本形式，保留间距。可能需要额外处理。</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">Q: 非拉丁字符怎么办？</div>
+            <div class="faq-answer">A: 采用UTF-8编码，支持大多数语言，包括中文、日文和阿拉伯文。</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">Q: 能处理大型PDF吗？</div>
+            <div class="faq-answer">A: 50MB以下文件效果最佳。较大文档可能因浏览器不同导致内存问题。</div>
+        </div>
+    </div>
+
+    <!-- 引入pdf.js库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    
+    <script>
+        // 配置pdf.js
+        const pdfjsLib = window['pdfjs-dist/build/pdf'];
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+            const selectFileBtn = document.getElementById('selectFileBtn');
+            const convertBtn = document.getElementById('convertBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const progressBar = document.getElementById('progressBar');
+            const progress = document.getElementById('progress');
+            const progressText = document.getElementById('progressText');
+            const resultSection = document.getElementById('resultSection');
+            const jsonPreview = document.getElementById('jsonPreview');
+            
+            let selectedFile = null;
+            let jsonResult = null;
+            let totalPages = 0;
+            let isConverted = false; // 标记是否已完成转换
+
+            // 初始化按钮状态
+            updateConvertBtn();
+
+            // 处理文件选择
+            selectFileBtn.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    selectedFile = e.target.files[0];
+                    updateUploadArea();
+                    updateConvertBtn(); // 更新按钮状态
+                    
+                    // 显示结果区域（包含转换按钮）
+                    resultSection.style.display = 'block';
+                    
+                    // 如果是继续转换的情况，重置结果预览
+                    if (isConverted) {
+                        jsonPreview.textContent = '';
+                    }
+                }
+            });
+
+            // 处理拖放
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('active');
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('active');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('active');
+                
+                if (e.dataTransfer.files.length > 0) {
+                    selectedFile = e.dataTransfer.files[0];
+                    updateUploadArea();
+                    updateConvertBtn(); // 更新按钮状态
+                    
+                    // 显示结果区域（包含转换按钮）
+                    resultSection.style.display = 'block';
+                    
+                    // 如果是继续转换的情况，重置结果预览
+                    if (isConverted) {
+                        jsonPreview.textContent = '';
+                    }
+                }
+            });
+
+            // 更新上传区域状态
+            function updateUploadArea() {
+                if (selectedFile) {
+                    uploadArea.innerHTML = `
+                        <div class="upload-icon">📄</div>
+                        <p>已选择文件: <strong>${selectedFile.name}</strong></p>
+                        <p class="text-sm">大小: ${formatFileSize(selectedFile.size)}</p>
+                    `;
+                } else {
+                    uploadArea.innerHTML = `
+                        <div class="upload-icon">📂</div>
+                        <p>点击或拖拽PDF文件到此处上传</p>
+                        <input type="file" id="fileInput" accept=".pdf" style="display: none;">
+                        <button class="btn" id="selectFileBtn">选择文件</button>
+                    `;
+                    
+                    // 重新绑定事件
+                    document.getElementById('selectFileBtn').addEventListener('click', () => {
+                        fileInput.click();
+                    });
+                }
+            }
+
+            // 更新转换按钮状态和文本
+            function updateConvertBtn() {
+                if (isConverted && selectedFile) {
+                    convertBtn.textContent = "转换";
+                    convertBtn.disabled = false;
+                } else if (isConverted && !selectedFile) {
+                    convertBtn.textContent = "继续转换";
+                    convertBtn.disabled = false;
+                } else if (selectedFile) {
+                    convertBtn.textContent = "转换";
+                    convertBtn.disabled = false;
+                } else {
+                    convertBtn.textContent = "转换";
+                    convertBtn.disabled = true;
+                }
+            }
+
+            // 格式化文件大小
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            // 转换按钮点击事件
+            convertBtn.addEventListener('click', () => {
+                if (isConverted && !selectedFile) {
+                    // 如果已转换且没有选择文件，重置为初始状态
+                    resetForNewConversion();
+                } else if (selectedFile) {
+                    // 如果有选择文件，执行转换或重新转换
+                    if (isConverted) {
+                        // 清除之前的结果
+                        jsonResult = null;
+                        jsonPreview.textContent = '';
+                        progressBar.style.display = 'none';
+                        progress.style.width = '0%';
+                        progressText.textContent = '准备转换...';
+                        
+                        // 显示进度条
+                        progressBar.style.display = 'block';
+                        
+                        // 执行重新转换
+                        parsePDF(selectedFile);
+                    } else {
+                        // 执行首次转换
+                        startConversion();
+                    }
+                }
+            });
+
+            // 重置为新的转换
+            function resetForNewConversion() {
+                selectedFile = null;
+                isConverted = false;
+                resultSection.style.display = 'none';
+                uploadArea.innerHTML = `
+                    <div class="upload-icon">📂</div>
+                    <p>点击或拖拽PDF文件到此处上传</p>
+                    <input type="file" id="fileInput" accept=".pdf" style="display: none;">
+                    <button class="btn" id="selectFileBtn">选择文件</button>
+                `;
+                document.getElementById('selectFileBtn').addEventListener('click', () => {
+                    fileInput.click();
+                });
+                updateConvertBtn();
+            }
+
+            // 开始转换
+            function startConversion() {
+                if (!selectedFile) return;
+                
+                // 显示进度条
+                progressBar.style.display = 'block';
+                progress.style.width = '0%';
+                progressText.textContent = '准备转换...';
+                
+                // 解析PDF文件
+                parsePDF(selectedFile);
+            }
+
+            // 解析PDF文件
+            function parsePDF(file) {
+                const fileReader = new FileReader();
+                
+                fileReader.onload = function() {
+                    const typedArray = new Uint8Array(this.result);
+                    
+                    // 加载PDF文件
+                    pdfjsLib.getDocument(typedArray).promise.then(function(pdf) {
+                        totalPages = pdf.numPages;
+                        const pages = [];
+                        let processedPages = 0;
+                        
+                        // 进度更新函数
+                        function updateProgress(currentPage, totalPages) {
+                            const progressPercent = Math.floor((currentPage / totalPages) * 100);
+                            progress.style.width = `${progressPercent}%`;
+                            progressText.textContent = `正在处理第 ${currentPage}/${totalPages} 页...`;
+                        }
+                        
+                        // 逐页解析
+                        function processPage(pageNum) {
+                            return pdf.getPage(pageNum).then(function(page) {
+                                console.log(`开始解析第 ${pageNum} 页`);
+                                
+                                return page.getTextContent({
+                                    normalizeWhitespace: true,
+                                    disableCombineTextItems: false
+                                }).then(function(textContent) {
+                                    // 优化文本提取逻辑，改进特殊字符处理
+                                    let pageText = '';
+                                    let lastY = null;
+                                    
+                                    if (textContent.items && textContent.items.length > 0) {
+                                        textContent.items.forEach(function(item) {
+                                            if (typeof item.str === 'string') {
+                                                // 规范化Unicode字符
+                                                const normalizedText = item.str.normalize('NFKC');
+                                                
+                                                // 处理换行和段落
+                                                if (lastY !== null && Math.abs(item.transform[5] - lastY) > 10) {
+                                                    pageText += '\n';
+                                                }
+                                                
+                                                // 添加规范化后的文本
+                                                pageText += normalizedText;
+                                                lastY = item.transform[5];
+                                            }
+                                        });
+                                    }
+                                    
+                                    const pageInfo = {
+                                        pageNumber: pageNum,
+                                        text: pageText,
+                                        characterCount: pageText.length,
+                                        wordCount: pageText.trim().split(/\s+/).filter(word => word.length > 0).length
+                                    };
+                                    
+                                    pages.push(pageInfo);
+                                    processedPages++;
+                                    updateProgress(processedPages, totalPages);
+                                    
+                                    console.log(`完成解析第 ${pageNum} 页，字符数: ${pageText.length}`);
+                                    return pageInfo;
+                                });
+                            }).catch(function(error) {
+                                console.error(`解析第 ${pageNum} 页时出错:`, error);
+                                progressText.textContent = `解析第 ${pageNum} 页时出错，继续处理下一页...`;
+                                // 即使某页解析失败，也继续处理其他页
+                                return null;
+                            });
+                        }
+                        
+                        // 顺序处理所有页面
+                        let pagePromises = [];
+                        for (let i = 1; i <= totalPages; i++) {
+                            pagePromises.push(processPage(i));
+                        }
+                        
+                        // 所有页面处理完成后
+                        Promise.all(pagePromises).then(function(results) {
+                            // 过滤掉解析失败的页面
+                            const validPages = results.filter(page => page !== null);
+                            
+                            // 创建JSON结果
+                            jsonResult = {
+                                metadata: {
+                                    filename: file.name,
+                                    size: file.size,
+                                    created: new Date().toISOString(),
+                                    pages: totalPages,
+                                    successfullyParsed: validPages.length,
+                                    language: "zh-CN",
+                                    characterEncoding: "UTF-8"
+                                },
+                                pages: validPages
+                            };
+                            
+                            progressText.textContent = `转换完成！成功解析 ${validPages.length}/${totalPages} 页`;
+                            
+                            // 标记为已转换
+                            isConverted = true;
+                            
+                            // 显示结果
+                            displayResult(jsonResult);
+                            
+                            // 更新按钮状态
+                            updateConvertBtn();
+                        });
+                    }).catch(function(error) {
+                        console.error('解析PDF时出错:', error);
+                        progressText.textContent = `解析PDF文件时出错: ${error.message}`;
+                        progressBar.style.display = 'none';
+                    });
+                };
+                
+                fileReader.readAsArrayBuffer(file);
+            }
+
+            // 显示转换结果
+            function displayResult(jsonData) {
+                // 隐藏进度条
+                setTimeout(() => {
+                    progressBar.style.display = 'none';
+                }, 1000);
+                
+                // 显示结果区域
+                resultSection.style.display = 'block';
+                
+                // 格式化JSON并显示
+                const formattedJson = JSON.stringify(jsonData, null, 2);
+                jsonPreview.textContent = formattedJson;
+                
+                // 滚动到结果区域
+                resultSection.scrollIntoView({ behavior: 'smooth' });
+            }
+
+            // 下载JSON文件
+            downloadBtn.addEventListener('click', () => {
+                if (!jsonResult) return;
+                
+                const blob = new Blob([JSON.stringify(jsonResult, null, 2)], { type: 'application/json;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = selectedFile.name.replace('.pdf', '.json');
+                document.body.appendChild(a);
+                a.click();
+                
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 0);
+            });
+        });
+    </script>
+</body>
+</html>
