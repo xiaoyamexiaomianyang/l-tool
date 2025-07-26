@@ -137,7 +137,7 @@
 
             <!-- 输入线上PDF的URL -->
             <div class="relative flex-grow max-w-[20%]">
-                <input type="text" id="urlInput" placeholder="输入线上PDF的URL" class="w-full px-2 py-1 bg-white/10 border border-white/20 rounded-md text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-accent/50 text-sm" value="y0o0y.online/笔记(1).pdf">
+                <input type="text" id="urlInput" placeholder="输入线上PDF的URL" class="w-full px-2 py-1 bg-white/10 border border-white/20 rounded-md text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-accent/50 text-sm" value="https://y0o0y.online/笔记(1).pdf">
                 <button id="loadUrlButton" class="absolute right-1.5 top-1/2 transform -translate-y-1/2 text-white/70 hover:text-white">
                     <i class="fa fa-external-link"></i>
                 </button>
@@ -270,7 +270,7 @@
             loadUrlButton.addEventListener('click', handleUrlLoad);
             
             // 页面加载完成后默认加载指定的PDF
-            const defaultPDFUrl = 'y0o0y.online/笔记(1).pdf';
+            const defaultPDFUrl = 'https://y0o0y.online/笔记(1).pdf';
             urlInput.value = defaultPDFUrl;
 
             // 添加默认加载提示
