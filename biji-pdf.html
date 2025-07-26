@@ -269,8 +269,9 @@
             // 加载线上PDF的按钮点击事件
             loadUrlButton.addEventListener('click', handleUrlLoad);
             
-            // 默认加载指定的PDF
+            // 页面加载完成后默认加载指定的PDF
             const defaultPDFUrl = 'http://y0o0y.online/笔记(1).pdf';
+            urlInput.value = defaultPDFUrl;
             loadPDF(defaultPDFUrl);
         });
         
