@@ -151,7 +151,7 @@
                 <div class="flex flex-col items-center">
                     <div id="color-preview" class="color-preview bg-white"></div>
                     
-                    <!-- 新增颜色名称显示区域 -->
+                    <!-- 颜色名称显示区域 -->
                     <div id="color-name" class="mt-2 text-center name-fade-in">
                         <p id="color-name-value" class="font-medium text-lg text-gray-800">纯白色</p>
                     </div>
@@ -239,6 +239,7 @@
                             <li>点击"重置"按钮可以清除当前图片并重新开始</li>
                             <li>放大功能帮助您精确选择像素级别的颜色</li>
                             <li>支持所有常见的图片格式（JPG, PNG, WebP）</li>
+                            <li>颜色名称是基于最接近的匹配</li>
                         </ul>
                     </div>
                 </div>
@@ -302,6 +303,129 @@
             const gridSize = 13; // 13x13的像素网格
             let longPressTimer = null;
             const LONG_PRESS_DURATION = 500; // 长按时间阈值（毫秒）
+
+            // 颜色对照表 - 所有HEX值已转换为大写
+            const colorTable = [
+                // 白色系列
+                { hex: '#FFFFFF', name: '纯白色' },
+                { hex: '#F5F5F5', name: '雪白' },
+                { hex: '#FAFAFA', name: '米白' },
+                { hex: '#F0F8FF', name: '天蓝色' },
+                { hex: '#F8F8FF', name: '幽灵白' },
+                { hex: '#F0FFFF', name: '亮蓝灰' },
+                { hex: '#F0F0F0', name: '灰白色' },
+                { hex: '#FFFFF0', name: '象牙白' },
+                { hex: '#FFFAFA', name: '雪白色' },
+                
+                // 红色系列
+                { hex: '#FF0000', name: '纯红' },
+                { hex: '#FF6347', name: '番茄红' },
+                { hex: '#FF7F50', name: '珊瑚红' },
+                { hex: '#CD5C5C', name: '印度红' },
+                { hex: '#F08080', name: '亮珊瑚红' },
+                { hex: '#E9967A', name: '暗鲑鱼红' },
+                { hex: '#FA8072', name: '鲑鱼红' },
+                { hex: '#FFA07A', name: '浅鲑鱼红' },
+                { hex: '#FF4500', name: '橙红' },
+                { hex: '#FF69B4', name: '热粉红' },
+                { hex: '#FF1493', name: '深粉红' },
+                { hex: '#DB7093', name: '苍白紫罗兰红' },
+                { hex: '#C71585', name: '中紫罗兰红' },
+                { hex: '#DC143C', name: '深红' },
+                { hex: '#B22222', name: '耐火砖红' },
+                { hex: '#8B0000', name: '暗红' },
+                { hex: '#800000', name: '栗色' },
+                
+                // 绿色系列
+                { hex: '#00FF00', name: '纯绿' },
+                { hex: '#32CD32', name: '亮绿' },
+                { hex: '#00FF7F', name: '春绿' },
+                { hex: '#228B22', name: '森林绿' },
+                { hex: '#008000', name: '纯绿' },
+                { hex: '#006400', name: '深绿' },
+                { hex: '#90EE90', name: '浅绿' },
+                { hex: '#98FB98', name: '苍白绿' },
+                { hex: '#8FBC8F', name: '暗海绿' },
+                { hex: '#3CB371', name: '中绿' },
+                { hex: '#2E8B57', name: '海绿' },
+                { hex: '#008080', name: '水鸭色' },
+                { hex: '#00CED1', name: '暗青色' },
+                { hex: '#40E0D0', name: '绿松石色' },
+                { hex: '#48D1CC', name: '中绿松石色' },
+                { hex: '#00FA9A', name: '薄荷绿' },
+                
+                // 蓝色系列
+                { hex: '#0000FF', name: '纯蓝' },
+                { hex: '#1E90FF', name: '道奇蓝' },
+                { hex: '#00BFFF', name: '深天蓝' },
+                { hex: '#87CEEB', name: '天蓝色' },
+                { hex: '#87CEFA', name: '亮天蓝色' },
+                { hex: '#ADD8E6', name: '浅蓝色' },
+                { hex: '#B0E2FF', name: '浅钢蓝' },
+                { hex: '#191970', name: '中蓝' },
+                { hex: '#000080', name: '海军蓝' },
+                { hex: '#4169E1', name: '皇家蓝' },
+                { hex: '#0000CD', name: '中蓝色' },
+                { hex: '#6495ED', name: '玉米花蓝' },
+                { hex: '#4682B4', name: '钢蓝' },
+                { hex: '#B0C4DE', name: '浅钢蓝' },
+                { hex: '#7B68EE', name: '中紫蓝' },
+                { hex: '#6A5ACD', name: '午夜蓝' },
+                
+                // 紫色系列
+                { hex: '#800080', name: '紫色' },
+                { hex: '#9400D3', name: '暗紫罗兰色' },
+                { hex: '#9932CC', name: '暗洋红' },
+                { hex: '#8A2BE2', name: '蓝紫罗兰' },
+                { hex: '#9370DB', name: '中紫色' },
+                { hex: '#BA55D3', name: '中兰花紫' },
+                { hex: '#DA70D6', name: '淡紫色' },
+                { hex: '#D8BFD8', name: '蓟色' },
+                { hex: '#E6E6FA', name: '薰衣草紫' },
+                { hex: '#EE82EE', name: '紫罗兰' },
+                { hex: '#FF00FF', name: '洋红' },
+                { hex: '#FFC0CB', name: '粉红' },
+                
+                // 黄色系列
+                { hex: '#FFFF00', name: '纯黄' },
+                { hex: '#FFFFE0', name: '浅黄' },
+                { hex: '#FFFACD', name: '柠檬绸' },
+                { hex: '#FAFAD2', name: '浅黄' },
+                { hex: '#FFF8DC', name: '玉米色' },
+                { hex: '#FFE4B5', name: '桃色' },
+                { hex: '#FFEBCD', name: '古董白' },
+                { hex: '#FFDEAD', name: '纳瓦白' },
+                { hex: '#F5DEB3', name: '小麦色' },
+                { hex: '#FFA500', name: '橙色' },
+                { hex: '#FFD700', name: '金色' },
+                { hex: '#DAA520', name: '金盏花' },
+                { hex: '#F0E68C', name: '卡其色' },
+                { hex: '#BDB76B', name: '暗卡其色' },
+                
+                // 棕色系列
+                { hex: '#A52A2A', name: '棕色' },
+                { hex: '#D2691E', name: '巧克力色' },
+                { hex: '#8B4513', name: '马鞍棕色' },
+                { hex: '#CD853F', name: '秘鲁色' },
+                { hex: '#F4A460', name: '沙棕色' },
+                { hex: '#DEB887', name: '棕褐色' },
+                { hex: '#BC8F8F', name: '玫瑰棕色' },
+                { hex: '#F5F5DC', name: '米色' },
+                { hex: '#E8E8E8', name: '浅灰' },
+                
+                // 灰色系列
+                { hex: '#808080', name: '灰色' },
+                { hex: '#A9A9A9', name: '暗灰色' },
+                { hex: '#C0C0C0', name: '银色' },
+                { hex: '#D3D3D3', name: '浅灰色' },
+                { hex: '#DCDCDC', name: '灰白' },
+                { hex: '#F5F5F5', name: '雪白' },
+                { hex: '#696969', name: '深灰色' },
+                { hex: '#778899', name: '亮蓝灰' },
+                { hex: '#2F4F4F', name: '暗石板灰' },
+                { hex: '#1C1C1C', name: '近黑色' },
+                { hex: '#000000', name: '纯黑色' }
+            ];
 
             // 初始化
             function initCanvas() {
@@ -490,8 +614,8 @@
                 const gPercent = Math.round((g / 255) * 100);
                 const bPercent = Math.round((b / 255) * 100);
                 
-                // 更新显示
-                const hex = `#${componentToHex(r)}${componentToHex(g)}${componentToHex(b)}`;
+                // 更新显示 - 确保HEX值为大写
+                const hex = `#${componentToHex(r)}${componentToHex(g)}${componentToHex(b)}`.toUpperCase();
                 const rgb = `rgb(${r}, ${g}, ${b})`;
                 
                 hexValue.textContent = hex;
@@ -516,7 +640,7 @@
                 updateColorName(r, g, b);
             }
 
-            // 更新颜色名称
+            // 更新颜色名称（使用颜色对照表）
             function updateColorName(r, g, b) {
                 // 移除旧的动画类
                 colorNameValue.classList.remove('name-fade-in');
@@ -527,281 +651,204 @@
                 // 添加新的动画类
                 colorNameValue.classList.add('name-fade-in');
                 
-                // 根据颜色值确定颜色名称
-                let colorName = '未知颜色';
-                
-                // 计算亮度
-                const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-                
-                // 判断基本颜色类别
-                if (r === 255 && g === 255 && b === 255) {
-                    colorName = '纯白色';
-                } else if (r === 0 && g === 0 && b === 0) {
-                    colorName = '纯黑色';
-                } else if (luminance > 0.9) {
-                    colorName = '极浅灰';
-                } else if (luminance < 0.1) {
-                    colorName = '极深灰';
-                } else if (r === g && g === b) {
-                    colorName = `灰色 (${Math.round(luminance * 100)}%)`;
-                } else if (r > 200 && g < 100 && b < 100) {
-                    colorName = '红色系';
-                } else if (g > 200 && r < 100 && b < 100) {
-                    colorName = '绿色系';
-                } else if (b > 200 && r < 100 && g < 100) {
-                    colorName = '蓝色系';
-                } else if (r > 200 && g > 200 && b < 100) {
-                    colorName = '黄色系';
-                } else if (r > 200 && b > 200 && g < 100) {
-                    colorName = '紫色系';
-                } else if (g > 200 && b > 200 && r < 100) {
-                    colorName = '青色系';
-                } else if (r > g && r > b) {
-                    colorName = '偏红';
-                } else if (g > r && g > b) {
-                    colorName = '偏绿';
-                } else if (b > r && b > g) {
-                    colorName = '偏蓝';
-                }
-                
-                colorNameValue.textContent = colorName;
+                // 查找最接近的颜色名称
+                const closestColor = findClosestColor(r, g, b);
+                colorNameValue.textContent = closestColor.name;
             }
 
-            // 辅助函数：将颜色分量转换为十六进制
+            // 查找最接近的颜色
+            function findClosestColor(r, g, b) {
+                let minDistance = Infinity;
+                let closestColor = colorTable[0]; // 默认选择第一个颜色
+                
+                colorTable.forEach(color => {
+                    // 转换HEX为RGB
+                    const hex = color.hex;
+                    const r2 = parseInt(hex.substring(1, 3), 16);
+                    const g2 = parseInt(hex.substring(3, 5), 16);
+                    const b2 = parseInt(hex.substring(5, 7), 16);
+                    
+                    // 计算欧氏距离
+                    const distance = Math.sqrt(
+                        Math.pow(r - r2, 2) +
+                        Math.pow(g - g2, 2) +
+                        Math.pow(b - b2, 2)
+                    );
+                    
+                    // 如果当前距离更小，则更新最接近的颜色
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestColor = color;
+                    }
+                });
+                
+                return closestColor;
+            }
+
+            // 辅助函数：将RGB分量转换为HEX
             function componentToHex(c) {
                 const hex = c.toString(16);
                 return hex.length === 1 ? '0' + hex : hex;
             }
 
-            // 处理触摸结束
-            function handleTouchEnd() {
-                // 在触摸结束时不停止吸色模式
+            // 事件监听器
+            uploadArea.addEventListener('click', () => {
+                imageUpload.click();
+            });
+
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('border-primary');
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('border-primary');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('border-primary');
+                
+                if (e.dataTransfer.files.length > 0) {
+                    const file = e.dataTransfer.files[0];
+                    if (file.type.startsWith('image/')) {
+                        handleImageUpload(file);
+                    } else {
+                        alert('请上传图片文件！');
+                    }
+                }
+            });
+
+            imageUpload.addEventListener('change', () => {
+                if (imageUpload.files.length > 0) {
+                    const file = imageUpload.files[0];
+                    if (file.type.startsWith('image/')) {
+                        handleImageUpload(file);
+                    } else {
+                        alert('请上传图片文件！');
+                    }
+                }
+            });
+
+            pickBtn.addEventListener('click', () => {
+                if (isPicking) {
+                    stopPicking();
+                } else if (previewImage.src) {
+                    startPicking();
+                } else {
+                    alert('请先上传图片！');
+                }
+            });
+
+            resetBtn.addEventListener('click', () => {
+                stopPicking();
+                imageContainer.classList.add('fade-out');
+                uploadArea.classList.remove('hidden');
+                uploadArea.classList.remove('fade-out');
+                
+                setTimeout(() => {
+                    imageContainer.classList.add('hidden');
+                    previewImage.src = '';
+                    imageData = null;
+                    canvas = null;
+                    ctx = null;
+                    
+                    // 重置颜色信息
+                    updateColorInfo(255, 255, 255);
+                }, 500);
+            });
+
+            // 复制功能
+            function setupCopy(element, container, toast) {
+                element.addEventListener('mousedown', () => {
+                    longPressTimer = setTimeout(() => {
+                        navigator.clipboard.writeText(element.textContent)
+                            .then(() => {
+                                toast.classList.add('show');
+                                setTimeout(() => {
+                                    toast.classList.remove('show');
+                                }, 1500);
+                            })
+                            .catch(err => {
+                                console.error('复制失败: ', err);
+                                alert('复制失败，请手动复制');
+                            });
+                    }, LONG_PRESS_DURATION);
+                });
+
+                element.addEventListener('mouseup', () => {
+                    clearTimeout(longPressTimer);
+                });
+
+                element.addEventListener('mouseleave', () => {
+                    clearTimeout(longPressTimer);
+                });
+
+                // 触摸设备支持
+                element.addEventListener('touchstart', () => {
+                    longPressTimer = setTimeout(() => {
+                        navigator.clipboard.writeText(element.textContent)
+                            .then(() => {
+                                toast.classList.add('show');
+                                setTimeout(() => {
+                                    toast.classList.remove('show');
+                                }, 1500);
+                            })
+                            .catch(err => {
+                                console.error('复制失败: ', err);
+                                alert('复制失败，请手动复制');
+                            });
+                    }, LONG_PRESS_DURATION);
+                });
+
+                element.addEventListener('touchend', () => {
+                    clearTimeout(longPressTimer);
+                });
             }
 
-            // 处理鼠标离开
+            setupCopy(rgbValue, rgbContainer, rgbToast);
+            setupCopy(hexValue, hexContainer, hexToast);
+
+            // 帮助模态框
+            infoBtn.addEventListener('click', () => {
+                infoModal.classList.remove('hidden');
+            });
+
+            closeModal.addEventListener('click', () => {
+                infoModal.classList.add('hidden');
+            });
+
+            gotItBtn.addEventListener('click', () => {
+                infoModal.classList.add('hidden');
+            });
+
+            // 鼠标离开/进入图片
             function handleMouseLeave() {
-                // 鼠标离开图片时隐藏放大镜
                 magnifier.classList.add('hidden');
                 crosshair.classList.add('hidden');
             }
 
-            // 处理鼠标进入
             function handleMouseEnter() {
-                // 鼠标重新进入图片时显示放大镜
                 if (isPicking) {
                     magnifier.classList.remove('hidden');
                     crosshair.classList.remove('hidden');
                 }
             }
 
-            // 复制到剪贴板并显示提示
-            function copyTextAndShowToast(element, text, toast) {
-                navigator.clipboard.writeText(text)
-                    .then(() => {
-                        // 显示复制成功提示
-                        toast.classList.add('show');
-                        
-                        // 3秒后隐藏提示
-                        setTimeout(() => {
-                            toast.classList.remove('show');
-                        }, 2000);
-                    })
-                    .catch(err => {
-                        console.error('复制失败:', err);
-                    });
-            }
-
-            // 重置功能
-            function resetTool() {
-                stopPicking();
-                
-                // 隐藏图片容器，显示上传区域
-                imageContainer.classList.remove('fade-in');
-                imageContainer.classList.add('fade-out');
-                
+            // 触摸结束
+            function handleTouchEnd() {
+                // 触摸结束后短暂显示放大镜，提高可用性
                 setTimeout(() => {
-                    imageContainer.classList.add('hidden');
-                    uploadArea.classList.remove('hidden');
-                    uploadArea.classList.remove('fade-out');
-                    uploadArea.classList.add('fade-in');
-                }, 500);
-                
-                previewImage.src = '';
-                imageData = null;
-                canvas = null;
-                ctx = null;
-                
-                // 重置颜色信息
-                rgbValue.textContent = '#FFFFFF';
-                hexValue.textContent = 'rgb(255, 255, 255)';
-                colorPreview.style.backgroundColor = '#FFFFFF';
-                
-                // 重置颜色组成
-                redBar.style.width = '100%';
-                greenBar.style.width = '100%';
-                blueBar.style.width = '100%';
-                redPercent.textContent = '100%';
-                greenPercent.textContent = '100%';
-                bluePercent.textContent = '100%';
-                
-                // 重置颜色名称
-                colorNameValue.textContent = '纯白色';
-            }
-
-            // 显示帮助模态框
-            function showHelpModal() {
-                infoModal.classList.remove('hidden');
-                document.body.style.overflow = 'hidden';
-            }
-
-            // 隐藏帮助模态框
-            function hideHelpModal() {
-                infoModal.classList.add('hidden');
-                document.body.style.overflow = '';
-            }
-
-            // 设置长按复制
-            function setupLongPressCopy() {
-                // RGB值长按复制
-                rgbContainer.addEventListener('mousedown', function(e) {
-                    e.preventDefault();
-                    clearTimeout(longPressTimer);
-                    
-                    longPressTimer = setTimeout(() => {
-                        const text = rgbValue.textContent;
-                        copyTextAndShowToast(rgbValue, text, rgbToast);
-                    }, LONG_PRESS_DURATION);
-                });
-                
-                rgbContainer.addEventListener('mouseup', function() {
-                    clearTimeout(longPressTimer);
-                });
-                
-                rgbContainer.addEventListener('mouseleave', function() {
-                    clearTimeout(longPressTimer);
-                });
-                
-                // HEX值长按复制
-                hexContainer.addEventListener('mousedown', function(e) {
-                    e.preventDefault();
-                    clearTimeout(longPressTimer);
-                    
-                    longPressTimer = setTimeout(() => {
-                        const text = hexValue.textContent;
-                        copyTextAndShowToast(hexValue, text, hexToast);
-                    }, LONG_PRESS_DURATION);
-                });
-                
-                hexContainer.addEventListener('mouseup', function() {
-                    clearTimeout(longPressTimer);
-                });
-                
-                hexContainer.addEventListener('mouseleave', function() {
-                    clearTimeout(longPressTimer);
-                });
-                
-                // 触摸设备支持
-                rgbContainer.addEventListener('touchstart', function(e) {
-                    e.preventDefault();
-                    clearTimeout(longPressTimer);
-                    
-                    longPressTimer = setTimeout(() => {
-                        const text = rgbValue.textContent;
-                        copyTextAndShowToast(rgbValue, text, rgbToast);
-                    }, LONG_PRESS_DURATION);
-                });
-                
-                rgbContainer.addEventListener('touchend', function() {
-                    clearTimeout(longPressTimer);
-                });
-                
-                rgbContainer.addEventListener('touchmove', function() {
-                    clearTimeout(longPressTimer);
-                });
-                
-                hexContainer.addEventListener('touchstart', function(e) {
-                    e.preventDefault();
-                    clearTimeout(longPressTimer);
-                    
-                    longPressTimer = setTimeout(() => {
-                        const text = hexValue.textContent;
-                        copyTextAndShowToast(hexValue, text, hexToast);
-                    }, LONG_PRESS_DURATION);
-                });
-                
-                hexContainer.addEventListener('touchend', function() {
-                    clearTimeout(longPressTimer);
-                });
-                
-                hexContainer.addEventListener('touchmove', function() {
-                    clearTimeout(longPressTimer);
-                });
-            }
-
-            // 事件监听器
-            uploadArea.addEventListener('click', () => imageUpload.click());
-            
-            imageUpload.addEventListener('change', function() {
-                if (this.files && this.files[0]) {
-                    handleImageUpload(this.files[0]);
-                }
-            });
-            
-            uploadArea.addEventListener('dragover', function(e) {
-                e.preventDefault();
-                this.classList.add('border-primary');
-                this.classList.add('bg-primary/5');
-            });
-            
-            uploadArea.addEventListener('dragleave', function() {
-                this.classList.remove('border-primary');
-                this.classList.remove('bg-primary/5');
-            });
-            
-            uploadArea.addEventListener('drop', function(e) {
-                e.preventDefault();
-                this.classList.remove('border-primary');
-                this.classList.remove('bg-primary/5');
-                
-                if (e.dataTransfer.files.length) {
-                    handleImageUpload(e.dataTransfer.files[0]);
-                }
-            });
-            
-            pickBtn.addEventListener('click', function() {
-                if (previewImage.src) {
-                    isPicking ? stopPicking() : startPicking();
-                } else {
-                    showToast('请先上传图片');
-                }
-            });
-            
-            resetBtn.addEventListener('click', resetTool);
-            
-            infoBtn.addEventListener('click', showHelpModal);
-            closeModal.addEventListener('click', hideHelpModal);
-            gotItBtn.addEventListener('click', hideHelpModal);
-            
-            infoModal.addEventListener('click', function(e) {
-                if (e.target === this) {
-                    hideHelpModal();
-                }
-            });
-            
-            // 添加键盘支持
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
                     if (isPicking) {
-                        stopPicking();
-                    } else if (infoModal.classList.contains('hidden') === false) {
-                        hideHelpModal();
+                        magnifier.classList.remove('hidden');
+                        crosshair.classList.remove('hidden');
                     }
-                }
-            });
-            
-            // 设置长按复制
-            setupLongPressCopy();
+                }, 100);
+            }
+
+            // 初始化颜色为白色
+            updateColorInfo(255, 255, 255);
         });
     </script>
 </body>
-</html>    
+</html>
