@@ -510,7 +510,7 @@
             window.scrollTo(0, currentScrollY);
         }
         
-        // 渲染单个页面 - 修复Canvas尺寸设置
+        // 渲染单个页面 - 修复Canvas尺寸设置和高DPI支持
         function renderPage(num) {
             return new Promise((resolve) => {
                 // 创建加载占位符
@@ -535,12 +535,26 @@
                     const context = canvas.getContext('2d');
                     const scaledViewport = page.getViewport({ scale });
                     
-                    // 设置Canvas尺寸（使用正确的属性）
-                    canvas.height = scaledViewport.height;
-                    canvas.width = scaledViewport.width;
+                    // 计算设备像素比以支持高DPI屏幕（如Retina）
+                    const devicePixelRatio = window.devicePixelRatio || 1;
+                    const backingStoreRatio = context.webkitBackingStorePixelRatio ||
+                                             context.mozBackingStorePixelRatio ||
+                                             context.msBackingStorePixelRatio ||
+                                             context.oBackingStorePixelRatio ||
+                                             context.backingStorePixelRatio || 1;
+                                             
+                    const pixelRatio = devicePixelRatio / backingStoreRatio;
                     
-                    // 设置CSS样式（可选，但应在渲染后设置）
-                    canvas.style.display = 'block'; // 确保没有额外的间距
+                    // 设置Canvas尺寸，考虑设备像素比
+                    canvas.width = scaledViewport.width * pixelRatio;
+                    canvas.height = scaledViewport.height * pixelRatio;
+                    
+                    // 设置CSS样式，保持正确的视觉尺寸
+                    canvas.style.width = `${scaledViewport.width}px`;
+                    canvas.style.height = `${scaledViewport.height}px`;
+                    
+                    // 调整上下文缩放以匹配设备像素比
+                    context.scale(pixelRatio, pixelRatio);
                     
                     const renderContext = {
                         canvasContext: context,
