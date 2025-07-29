@@ -166,8 +166,19 @@
             }
 
             .action-btn {
-    	@apply w-auto px-6 h-10 rounded-full flex items-center justify-center transition-all duration-300;
+                @apply w-auto px-6 h-10 rounded-full flex items-center justify-center transition-all duration-300;
             }
+        }
+    </style>
+    <style>
+        /* 添加以下样式 */
+        #image-container {
+            max-height: 400px;
+        }
+
+        #preview-image {
+            max-height: 400px;
+            object-fit: contain; /* 确保图片保持比例并适应容器 */
         }
     </style>
 </head>
@@ -797,83 +808,23 @@
                 pickBtn.addEventListener('click', () => {
                     if (isPicking) {
                         stopPicking();
-                    } else if (previewImage.src) {
-                        startPicking();
                     } else {
-                        alert('请先上传图片！');
+                        startPicking();
                     }
                 });
 
                 resetBtn.addEventListener('click', () => {
-                    stopPicking();
                     imageContainer.classList.add('fade-out');
-                    uploadArea.classList.remove('hidden');
-                    uploadArea.classList.remove('fade-out');
-
                     setTimeout(() => {
                         imageContainer.classList.add('hidden');
+                        uploadArea.classList.remove('hidden');
+                        uploadArea.classList.remove('fade-out');
                         previewImage.src = '';
                         imageData = null;
-                        canvas = null;
-                        ctx = null;
-
-                        // 重置颜色信息
-                        updateColorInfo(255, 255, 255);
+                        stopPicking();
                     }, 500);
                 });
 
-                // 复制功能
-                function setupCopy(element, container, toast) {
-                    element.addEventListener('mousedown', () => {
-                        longPressTimer = setTimeout(() => {
-                            navigator.clipboard.writeText(element.textContent)
-                                .then(() => {
-                                    toast.classList.add('show');
-                                    setTimeout(() => {
-                                        toast.classList.remove('show');
-                                    }, 1500);
-                                })
-                                .catch(err => {
-                                    console.error('复制失败: ', err);
-                                    alert('复制失败，请手动复制');
-                                });
-                        }, LONG_PRESS_DURATION);
-                    });
-
-                    element.addEventListener('mouseup', () => {
-                        clearTimeout(longPressTimer);
-                    });
-
-                    element.addEventListener('mouseleave', () => {
-                        clearTimeout(longPressTimer);
-                    });
-
-                    // 触摸设备支持
-                    element.addEventListener('touchstart', () => {
-                        longPressTimer = setTimeout(() => {
-                            navigator.clipboard.writeText(element.textContent)
-                                .then(() => {
-                                    toast.classList.add('show');
-                                    setTimeout(() => {
-                                        toast.classList.remove('show');
-                                    }, 1500);
-                                })
-                                .catch(err => {
-                                    console.error('复制失败: ', err);
-                                    alert('复制失败，请手动复制');
-                                });
-                        }, LONG_PRESS_DURATION);
-                    });
-
-                    element.addEventListener('touchend', () => {
-                        clearTimeout(longPressTimer);
-                    });
-                }
-
-                setupCopy(rgbValue, rgbContainer, rgbToast);
-                setupCopy(hexValue, hexContainer, hexToast);
-
-                // 帮助模态框
                 infoBtn.addEventListener('click', () => {
                     infoModal.classList.remove('hidden');
                 });
@@ -886,7 +837,80 @@
                     infoModal.classList.add('hidden');
                 });
 
-                // 鼠标离开/进入图片
+                // 复制功能
+                rgbContainer.addEventListener('mousedown', () => {
+                    longPressTimer = setTimeout(() => {
+                        const text = rgbValue.textContent;
+                        navigator.clipboard.writeText(text).then(() => {
+                            rgbToast.classList.add('show');
+                            setTimeout(() => {
+                                rgbToast.classList.remove('show');
+                            }, 1000);
+                        }).catch((err) => {
+                            console.error('复制失败:', err);
+                        });
+                    }, LONG_PRESS_DURATION);
+                });
+
+                rgbContainer.addEventListener('mouseup', () => {
+                    clearTimeout(longPressTimer);
+                });
+
+                hexContainer.addEventListener('mousedown', () => {
+                    longPressTimer = setTimeout(() => {
+                        const text = hexValue.textContent;
+                        navigator.clipboard.writeText(text).then(() => {
+                            hexToast.classList.add('show');
+                            setTimeout(() => {
+                                hexToast.classList.remove('show');
+                            }, 1000);
+                        }).catch((err) => {
+                            console.error('复制失败:', err);
+                        });
+                    }, LONG_PRESS_DURATION);
+                });
+
+                hexContainer.addEventListener('mouseup', () => {
+                    clearTimeout(longPressTimer);
+                });
+
+                // 触摸设备复制支持
+                rgbContainer.addEventListener('touchstart', () => {
+                    longPressTimer = setTimeout(() => {
+                        const text = rgbValue.textContent;
+                        navigator.clipboard.writeText(text).then(() => {
+                            rgbToast.classList.add('show');
+                            setTimeout(() => {
+                                rgbToast.classList.remove('show');
+                            }, 1000);
+                        }).catch((err) => {
+                            console.error('复制失败:', err);
+                        });
+                    }, LONG_PRESS_DURATION);
+                });
+
+                rgbContainer.addEventListener('touchend', () => {
+                    clearTimeout(longPressTimer);
+                });
+
+                hexContainer.addEventListener('touchstart', () => {
+                    longPressTimer = setTimeout(() => {
+                        const text = hexValue.textContent;
+                        navigator.clipboard.writeText(text).then(() => {
+                            hexToast.classList.add('show');
+                            setTimeout(() => {
+                                hexToast.classList.remove('show');
+                            }, 1000);
+                        }).catch((err) => {
+                            console.error('复制失败:', err);
+                        });
+                    }, LONG_PRESS_DURATION);
+                });
+
+                hexContainer.addEventListener('touchend', () => {
+                    clearTimeout(longPressTimer);
+                });
+
                 function handleMouseLeave() {
                     magnifier.classList.add('hidden');
                     crosshair.classList.add('hidden');
@@ -899,22 +923,14 @@
                     }
                 }
 
-                // 触摸结束
                 function handleTouchEnd() {
-                    // 触摸结束后短暂显示放大镜，提高可用性
-                    setTimeout(() => {
-                        if (isPicking) {
-                            magnifier.classList.remove('hidden');
-                            crosshair.classList.remove('hidden');
-                        }
-                    }, 100);
+                    if (!isPicking) {
+                        magnifier.classList.add('hidden');
+                        crosshair.classList.add('hidden');
+                    }
                 }
-
-                // 初始化颜色为白色
-                updateColorInfo(255, 255, 255);
             });
         </script>
 </body>
 
 </html>
-    
