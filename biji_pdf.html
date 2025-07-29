@@ -479,7 +479,7 @@
                 renderNextPage();
             }).catch((error) => {
                 console.error('加载PDF失败:', error);
-                showToast('加载PDF失败，请检查文件或URL');
+                showToast(`加载PDF失败: ${error.message}`);
                 loadingIndicator.classList.add('hidden');
                 placeholder.style.display = 'flex';
             });
@@ -559,7 +559,15 @@
                         });
                         
                         resolve();
+                    }).catch((error) => {
+                        console.error(`渲染第 ${num} 页失败:`, error);
+                        showToast(`渲染第 ${num} 页失败: ${error.message}`);
+                        resolve();
                     });
+                }).catch((error) => {
+                    console.error(`获取第 ${num} 页失败:`, error);
+                    showToast(`获取第 ${num} 页失败: ${error.message}`);
+                    resolve();
                 });
             });
         }
