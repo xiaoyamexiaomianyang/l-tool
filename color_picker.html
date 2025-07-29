@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -28,48 +29,91 @@
             .content-auto {
                 content-visibility: auto;
             }
+
             .backdrop-blur-xs {
                 backdrop-filter: blur(2px);
             }
+
             .color-preview {
-                @apply w-16 h-16 rounded-lg shadow-lg border-4 border-white transition-all duration-300;
+                @apply w-20 h-20 rounded-full shadow-lg border-4 border-white transition-all duration-300 transform hover:scale-105;
             }
+
             .color-info {
                 @apply bg-white/90 backdrop-blur-xs rounded-xl p-4 shadow-lg border border-gray-100 transition-all duration-300;
             }
+
             .input-label {
                 @apply flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer bg-gray-50 transition-all duration-300 hover:bg-gray-100;
             }
+
             .btn {
-                @apply px-4 py-2 rounded-lg font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2;
+                @apply px-4 py-2.5 rounded-full font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center justify-center;
             }
+
             .btn-primary {
-                @apply bg-primary text-white hover:bg-primary/90 focus:ring-primary/50;
+                @apply bg-primary text-white hover:bg-primary/90 focus:ring-primary/50 hover:shadow-md;
             }
+
             .btn-secondary {
-                @apply bg-gray-200 text-gray-800 hover:bg-gray-300 focus:ring-gray-400/50;
+                @apply bg-gray-200 text-gray-800 hover:bg-gray-300 focus:ring-gray-400/50 hover:shadow-md;
             }
+
             .fade-out {
                 animation: fadeOut 0.5s forwards;
             }
+
             .fade-in {
                 animation: fadeIn 0.5s forwards;
             }
+
             .name-fade-in {
                 animation: nameFadeIn 0.3s forwards;
             }
+
             @keyframes fadeOut {
-                from { opacity: 1; height: auto; margin-bottom: 1.5rem; }
-                to { opacity: 0; height: 0; margin-bottom: 0; padding: 0; overflow: hidden; }
+                from {
+                    opacity: 1;
+                    height: auto;
+                    margin-bottom: 1.5rem;
+                }
+
+                to {
+                    opacity: 0;
+                    height: 0;
+                    margin-bottom: 0;
+                    padding: 0;
+                    overflow: hidden;
+                }
             }
+
             @keyframes fadeIn {
-                from { opacity: 0; height: 0; margin-bottom: 0; padding: 0; overflow: hidden; }
-                to { opacity: 1; height: auto; margin-bottom: 1.5rem; }
+                from {
+                    opacity: 0;
+                    height: 0;
+                    margin-bottom: 0;
+                    padding: 0;
+                    overflow: hidden;
+                }
+
+                to {
+                    opacity: 1;
+                    height: auto;
+                    margin-bottom: 1.5rem;
+                }
             }
+
             @keyframes nameFadeIn {
-                from { opacity: 0; transform: translateY(5px); }
-                to { opacity: 1; transform: translateY(0); }
+                from {
+                    opacity: 0;
+                    transform: translateY(5px);
+                }
+
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
             }
+
             .pixel-grid {
                 display: grid;
                 grid-template-columns: repeat(13, 1fr);
@@ -78,33 +122,56 @@
                 width: 100%;
                 height: 100%;
             }
+
             .pixel {
                 transition: all 0.1s ease;
                 border: 1px solid rgba(255, 255, 255, 0.1);
             }
+
             .selected-pixel {
                 transform: scale(1.1);
                 box-shadow: 0 0 0 1px white, 0 0 4px rgba(0, 0, 0, 0.3);
                 z-index: 10;
             }
+
             .magnifier-border {
                 background: linear-gradient(45deg, #333 25%, transparent 25%, transparent 75%, #333 75%, #333),
-                            linear-gradient(45deg, #333 25%, transparent 25%, transparent 75%, #333 75%, #333);
+                    linear-gradient(45deg, #333 25%, transparent 25%, transparent 75%, #333 75%, #333);
                 background-size: 10px 10px;
                 background-position: 0 0, 5px 5px;
             }
+
             .copyable-text {
                 @apply cursor-pointer relative overflow-hidden;
             }
+
             .copy-toast {
                 @apply absolute -top-8 left-1/2 transform -translate-x-1/2 bg-primary text-white text-xs px-2 py-1 rounded opacity-0 transition-opacity duration-300 whitespace-nowrap;
             }
+
             .copy-toast.show {
                 @apply opacity-100;
+            }
+
+            .button-container {
+                @apply flex justify-between items-center mt-4;
+            }
+
+            .adjusted-btn {
+                @apply px-4 py-2 rounded-full text-sm font-medium h-12;
+            }
+
+            .color-control-group {
+                @apply flex items-center justify-between w-full;
+            }
+
+            .action-btn {
+    	@apply w-auto px-6 h-10 rounded-full flex items-center justify-center transition-all duration-300;
             }
         }
     </style>
 </head>
+
 <body class="font-inter bg-gradient-to-br from-surface to-gray-100 min-h-screen text-neutral">
     <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-xs shadow-sm">
         <div class="container mx-auto px-4 py-4 flex justify-between items-center">
@@ -122,14 +189,14 @@
         <div class="w-full max-w-md mb-6">
             <div class="bg-white rounded-2xl shadow-lg p-5 transform transition-all duration-500 hover:shadow-xl">
                 <h2 class="text-lg font-semibold mb-4 text-primary">上传图片</h2>
-                
+
                 <div id="upload-area" class="input-label">
                     <i class="fa fa-cloud-upload text-4xl text-gray-400 mb-3"></i>
                     <p class="text-center text-gray-500">拖放图片到此处，或点击上传</p>
                     <p class="text-xs text-gray-400 mt-2">支持 JPG, PNG, WebP 格式</p>
                     <input type="file" id="image-upload" accept="image/*" class="hidden">
                 </div>
-                
+
                 <div id="image-container" class="mt-4 hidden relative">
                     <img id="preview-image" class="w-full h-auto rounded-lg shadow-sm" src="" alt="上传的图片">
                     <div id="magnifier" class="absolute w-36 h-36 rounded-full border-2 border-white shadow-xl hidden pointer-events-none transform -translate-x-1/2 -translate-y-1/2 z-10 overflow-hidden magnifier-border">
@@ -149,13 +216,21 @@
         <div class="w-full max-w-md mb-6">
             <div class="bg-white rounded-2xl shadow-lg p-5 transform transition-all duration-500 hover:shadow-xl">
                 <div class="flex flex-col items-center">
-                    <div id="color-preview" class="color-preview bg-white"></div>
-                    
+                    <div class="color-control-group w-full">
+                        <button id="reset-btn" class="action-btn btn-secondary hover:bg-gray-200">
+                            <i class="fa fa-refresh text-lg mr-1"></i> 重置
+                        </button>
+                        <div id="color-preview" class="color-preview bg-white"></div>
+                        <button id="pick-btn" class="action-btn btn-primary hover:bg-primary/90">
+                            <i class="fa fa-eyedropper text-lg mr-1"></i> 吸色
+                        </button>
+                    </div>
+
                     <!-- 颜色名称显示区域 -->
                     <div id="color-name" class="mt-2 text-center name-fade-in">
                         <p id="color-name-value" class="font-medium text-lg text-gray-800">纯白色</p>
                     </div>
-                    
+
                     <div id="color-info" class="color-info w-full mt-5">
                         <div class="grid grid-cols-2 gap-4">
                             <div>
@@ -199,656 +274,647 @@
             </div>
         </div>
 
-        <!-- 操作按钮 -->
-        <div class="w-full max-w-md flex justify-between">
-            <button id="reset-btn" class="btn btn-secondary flex-1 mr-2">
-                <i class="fa fa-refresh mr-1"></i> 重置
-            </button>
-            <button id="pick-btn" class="btn btn-primary flex-1 ml-2">
-                <i class="fa fa-eyedropper mr-1"></i> 开始吸色
-            </button>
-        </div>
-    </main>
+        <!-- 帮助模态框 -->
+        <div id="info-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-primary">使用帮助</h3>
+                        <button id="close-modal" class="text-gray-400 hover:text-gray-600">
+                            <i class="fa fa-times text-xl"></i>
+                        </button>
+                    </div>
 
-    <!-- 帮助模态框 -->
-    <div id="info-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div class="p-6">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-xl font-bold text-primary">使用帮助</h3>
-                    <button id="close-modal" class="text-gray-400 hover:text-gray-600">
-                        <i class="fa fa-times text-xl"></i>
-                    </button>
-                </div>
-                
-                <div class="space-y-4 text-gray-700">
-                    <div>
-                        <h4 class="font-semibold text-lg mb-2">如何使用颜色吸管？</h4>
-                        <ol class="list-decimal pl-5 space-y-2">
-                            <li>上传一张图片（支持拖放或点击上传）</li>
-                            <li>点击"开始吸色"按钮</li>
-                            <li>移动手指/鼠标在图片上选择想要的颜色</li>
-                            <li>颜色信息会实时更新显示</li>
-                            <li>长按RGB或HEX颜色值可以复制</li>
-                        </ol>
+                    <div class="space-y-4 text-gray-700">
+                        <div>
+                            <h4 class="font-semibold text-lg mb-2">如何使用颜色吸管？</h4>
+                            <ol class="list-decimal pl-5 space-y-2">
+                                <li>上传一张图片（支持拖放或点击上传）</li>
+                                <li>点击"吸色"按钮</li>
+                                <li>移动手指/鼠标在图片上选择想要的颜色</li>
+                                <li>颜色信息会实时更新显示</li>
+                                <li>长按RGB或HEX颜色值可以复制</li>
+                            </ol>
+                        </div>
+
+                        <div>
+                            <h4 class="font-semibold text-lg mb-2">提示</h4>
+                            <ul class="list-disc pl-5 space-y-2">
+                                <li>点击"重置"按钮可以清除当前图片并重新开始</li>
+                                <li>放大功能帮助您精确选择像素级别的颜色</li>
+                                <li>支持所有常见的图片格式（JPG, PNG, WebP）</li>
+                                <li>颜色名称是基于最接近的匹配</li>
+                            </ul>
+                        </div>
                     </div>
-                    
-                    <div>
-                        <h4 class="font-semibold text-lg mb-2">提示</h4>
-                        <ul class="list-disc pl-5 space-y-2">
-                            <li>点击"重置"按钮可以清除当前图片并重新开始</li>
-                            <li>放大功能帮助您精确选择像素级别的颜色</li>
-                            <li>支持所有常见的图片格式（JPG, PNG, WebP）</li>
-                            <li>颜色名称是基于最接近的匹配</li>
-                        </ul>
+
+                    <div class="mt-6 text-center">
+                        <button id="got-it" class="btn btn-primary">
+                            明白了
+                        </button>
                     </div>
-                </div>
-                
-                <div class="mt-6 text-center">
-                    <button id="got-it" class="btn btn-primary">
-                        明白了
-                    </button>
                 </div>
             </div>
         </div>
-    </div>
 
-    <footer class="mt-10 pb-6 text-center text-gray-500 text-sm">
-        <p>© 2025 颜色吸管工具 | 专为移动设备优化</p>
-    </footer>
+        <footer class="mt-10 pb-6 text-center text-gray-500 text-sm">
+            <p>© 2025 颜色吸管工具 | 专为移动设备优化</p>
+        </footer>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // DOM元素
-            const uploadArea = document.getElementById('upload-area');
-            const imageUpload = document.getElementById('image-upload');
-            const imageContainer = document.getElementById('image-container');
-            const previewImage = document.getElementById('preview-image');
-            const magnifier = document.getElementById('magnifier');
-            const crosshair = document.getElementById('crosshair');
-            const pixelGrid = document.getElementById('pixel-grid');
-            const pickBtn = document.getElementById('pick-btn');
-            const resetBtn = document.getElementById('reset-btn');
-            const rgbValue = document.getElementById('rgb-value');
-            const hexValue = document.getElementById('hex-value');
-            const colorPreview = document.getElementById('color-preview');
-            const infoBtn = document.getElementById('info-btn');
-            const infoModal = document.getElementById('info-modal');
-            const closeModal = document.getElementById('close-modal');
-            const gotItBtn = document.getElementById('got-it');
-            
-            // 新增颜色组成相关元素
-            const redBar = document.getElementById('red-bar');
-            const greenBar = document.getElementById('green-bar');
-            const blueBar = document.getElementById('blue-bar');
-            const redPercent = document.getElementById('red-percent');
-            const greenPercent = document.getElementById('green-percent');
-            const bluePercent = document.getElementById('blue-percent');
-            
-            // 复制相关元素
-            const rgbContainer = document.getElementById('rgb-container');
-            const hexContainer = document.getElementById('hex-container');
-            const rgbToast = rgbContainer.querySelector('.copy-toast');
-            const hexToast = hexContainer.querySelector('.copy-toast');
-            
-            // 新增颜色名称相关元素
-            const colorNameValue = document.getElementById('color-name-value');
-            
-            // 状态变量
-            let isPicking = false;
-            let imageData = null;
-            let canvas = null;
-            let ctx = null;
-            let pixelElements = []; // 存储像素元素
-            const gridSize = 13; // 13x13的像素网格
-            let longPressTimer = null;
-            const LONG_PRESS_DURATION = 500; // 长按时间阈值（毫秒）
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                // DOM元素
+                const uploadArea = document.getElementById('upload-area');
+                const imageUpload = document.getElementById('image-upload');
+                const imageContainer = document.getElementById('image-container');
+                const previewImage = document.getElementById('preview-image');
+                const magnifier = document.getElementById('magnifier');
+                const crosshair = document.getElementById('crosshair');
+                const pixelGrid = document.getElementById('pixel-grid');
+                const pickBtn = document.getElementById('pick-btn');
+                const resetBtn = document.getElementById('reset-btn');
+                const rgbValue = document.getElementById('rgb-value');
+                const hexValue = document.getElementById('hex-value');
+                const colorPreview = document.getElementById('color-preview');
+                const infoBtn = document.getElementById('info-btn');
+                const infoModal = document.getElementById('info-modal');
+                const closeModal = document.getElementById('close-modal');
+                const gotItBtn = document.getElementById('got-it');
 
-            // 颜色对照表 - 所有HEX值已转换为大写
-            const colorTable = [
-                // 白色系列
-                { hex: '#FFFFFF', name: '纯白色' },
-                { hex: '#F5F5F5', name: '雪白' },
-                { hex: '#FAFAFA', name: '米白' },
-                { hex: '#F0F8FF', name: '天蓝色' },
-                { hex: '#F8F8FF', name: '幽灵白' },
-                { hex: '#F0FFFF', name: '亮蓝灰' },
-                { hex: '#F0F0F0', name: '灰白色' },
-                { hex: '#FFFFF0', name: '象牙白' },
-                { hex: '#FFFAFA', name: '雪白色' },
-                
-                // 红色系列
-                { hex: '#FF0000', name: '纯红' },
-                { hex: '#FF6347', name: '番茄红' },
-                { hex: '#FF7F50', name: '珊瑚红' },
-                { hex: '#CD5C5C', name: '印度红' },
-                { hex: '#F08080', name: '亮珊瑚红' },
-                { hex: '#E9967A', name: '暗鲑鱼红' },
-                { hex: '#FA8072', name: '鲑鱼红' },
-                { hex: '#FFA07A', name: '浅鲑鱼红' },
-                { hex: '#FF4500', name: '橙红' },
-                { hex: '#FF69B4', name: '热粉红' },
-                { hex: '#FF1493', name: '深粉红' },
-                { hex: '#DB7093', name: '苍白紫罗兰红' },
-                { hex: '#C71585', name: '中紫罗兰红' },
-                { hex: '#DC143C', name: '深红' },
-                { hex: '#B22222', name: '耐火砖红' },
-                { hex: '#8B0000', name: '暗红' },
-                { hex: '#800000', name: '栗色' },
-                
-                // 绿色系列
-                { hex: '#00FF00', name: '纯绿' },
-                { hex: '#32CD32', name: '亮绿' },
-                { hex: '#00FF7F', name: '春绿' },
-                { hex: '#228B22', name: '森林绿' },
-                { hex: '#008000', name: '纯绿' },
-                { hex: '#006400', name: '深绿' },
-                { hex: '#90EE90', name: '浅绿' },
-                { hex: '#98FB98', name: '苍白绿' },
-                { hex: '#8FBC8F', name: '暗海绿' },
-                { hex: '#3CB371', name: '中绿' },
-                { hex: '#2E8B57', name: '海绿' },
-                { hex: '#008080', name: '水鸭色' },
-                { hex: '#00CED1', name: '暗青色' },
-                { hex: '#40E0D0', name: '绿松石色' },
-                { hex: '#48D1CC', name: '中绿松石色' },
-                { hex: '#00FA9A', name: '薄荷绿' },
-                
-                // 蓝色系列
-                { hex: '#0000FF', name: '纯蓝' },
-                { hex: '#1E90FF', name: '道奇蓝' },
-                { hex: '#00BFFF', name: '深天蓝' },
-                { hex: '#87CEEB', name: '天蓝色' },
-                { hex: '#87CEFA', name: '亮天蓝色' },
-                { hex: '#ADD8E6', name: '浅蓝色' },
-                { hex: '#B0E2FF', name: '浅钢蓝' },
-                { hex: '#191970', name: '中蓝' },
-                { hex: '#000080', name: '海军蓝' },
-                { hex: '#4169E1', name: '皇家蓝' },
-                { hex: '#0000CD', name: '中蓝色' },
-                { hex: '#6495ED', name: '玉米花蓝' },
-                { hex: '#4682B4', name: '钢蓝' },
-                { hex: '#B0C4DE', name: '浅钢蓝' },
-                { hex: '#7B68EE', name: '中紫蓝' },
-                { hex: '#6A5ACD', name: '午夜蓝' },
-                
-                // 紫色系列
-                { hex: '#800080', name: '紫色' },
-                { hex: '#9400D3', name: '暗紫罗兰色' },
-                { hex: '#9932CC', name: '暗洋红' },
-                { hex: '#8A2BE2', name: '蓝紫罗兰' },
-                { hex: '#9370DB', name: '中紫色' },
-                { hex: '#BA55D3', name: '中兰花紫' },
-                { hex: '#DA70D6', name: '淡紫色' },
-                { hex: '#D8BFD8', name: '蓟色' },
-                { hex: '#E6E6FA', name: '薰衣草紫' },
-                { hex: '#EE82EE', name: '紫罗兰' },
-                { hex: '#FF00FF', name: '洋红' },
-                { hex: '#FFC0CB', name: '粉红' },
-                
-                // 黄色系列
-                { hex: '#FFFF00', name: '纯黄' },
-                { hex: '#FFFFE0', name: '浅黄' },
-                { hex: '#FFFACD', name: '柠檬绸' },
-                { hex: '#FAFAD2', name: '浅黄' },
-                { hex: '#FFF8DC', name: '玉米色' },
-                { hex: '#FFE4B5', name: '桃色' },
-                { hex: '#FFEBCD', name: '古董白' },
-                { hex: '#FFDEAD', name: '纳瓦白' },
-                { hex: '#F5DEB3', name: '小麦色' },
-                { hex: '#FFA500', name: '橙色' },
-                { hex: '#FFD700', name: '金色' },
-                { hex: '#DAA520', name: '金盏花' },
-                { hex: '#F0E68C', name: '卡其色' },
-                { hex: '#BDB76B', name: '暗卡其色' },
-                
-                // 棕色系列
-                { hex: '#A52A2A', name: '棕色' },
-                { hex: '#D2691E', name: '巧克力色' },
-                { hex: '#8B4513', name: '马鞍棕色' },
-                { hex: '#CD853F', name: '秘鲁色' },
-                { hex: '#F4A460', name: '沙棕色' },
-                { hex: '#DEB887', name: '棕褐色' },
-                { hex: '#BC8F8F', name: '玫瑰棕色' },
-                { hex: '#F5F5DC', name: '米色' },
-                { hex: '#E8E8E8', name: '浅灰' },
-                
-                // 灰色系列
-                { hex: '#808080', name: '灰色' },
-                { hex: '#A9A9A9', name: '暗灰色' },
-                { hex: '#C0C0C0', name: '银色' },
-                { hex: '#D3D3D3', name: '浅灰色' },
-                { hex: '#DCDCDC', name: '灰白' },
-                { hex: '#F5F5F5', name: '雪白' },
-                { hex: '#696969', name: '深灰色' },
-                { hex: '#778899', name: '亮蓝灰' },
-                { hex: '#2F4F4F', name: '暗石板灰' },
-                { hex: '#1C1C1C', name: '近黑色' },
-                { hex: '#000000', name: '纯黑色' }
-            ];
+                // 新增颜色组成相关元素
+                const redBar = document.getElementById('red-bar');
+                const greenBar = document.getElementById('green-bar');
+                const blueBar = document.getElementById('blue-bar');
+                const redPercent = document.getElementById('red-percent');
+                const greenPercent = document.getElementById('green-percent');
+                const bluePercent = document.getElementById('blue-percent');
 
-            // 初始化
-            function initCanvas() {
-                if (!canvas) {
-                    canvas = document.createElement('canvas');
-                    ctx = canvas.getContext('2d');
+                // 复制相关元素
+                const rgbContainer = document.getElementById('rgb-container');
+                const hexContainer = document.getElementById('hex-container');
+                const rgbToast = rgbContainer.querySelector('.copy-toast');
+                const hexToast = hexContainer.querySelector('.copy-toast');
+
+                // 新增颜色名称相关元素
+                const colorNameValue = document.getElementById('color-name-value');
+
+                // 状态变量
+                let isPicking = false;
+                let imageData = null;
+                let canvas = null;
+                let ctx = null;
+                let pixelElements = []; // 存储像素元素
+                const gridSize = 13; // 13x13的像素网格
+                let longPressTimer = null;
+                const LONG_PRESS_DURATION = 500; // 长按时间阈值（毫秒）
+
+                // 颜色对照表 - 所有HEX值已转换为大写
+                const colorTable = [
+                    // 白色系列
+                    { hex: '#FFFFFF', name: '纯白色' },
+                    { hex: '#F5F5F5', name: '雪白' },
+                    { hex: '#FAFAFA', name: '米白' },
+                    { hex: '#F0F8FF', name: '天蓝色' },
+                    { hex: '#F8F8FF', name: '幽灵白' },
+                    { hex: '#F0FFFF', name: '亮蓝灰' },
+                    { hex: '#F0F0F0', name: '灰白色' },
+                    { hex: '#FFFFF0', name: '象牙白' },
+                    { hex: '#FFFAFA', name: '雪白色' },
+
+                    // 红色系列
+                    { hex: '#FF0000', name: '纯红' },
+                    { hex: '#FF6347', name: '番茄红' },
+                    { hex: '#FF7F50', name: '珊瑚红' },
+                    { hex: '#CD5C5C', name: '印度红' },
+                    { hex: '#F08080', name: '亮珊瑚红' },
+                    { hex: '#E9967A', name: '暗鲑鱼红' },
+                    { hex: '#FA8072', name: '鲑鱼红' },
+                    { hex: '#FFA07A', name: '浅鲑鱼红' },
+                    { hex: '#FF4500', name: '橙红' },
+                    { hex: '#FF69B4', name: '热粉红' },
+                    { hex: '#FF1493', name: '深粉红' },
+                    { hex: '#DB7093', name: '苍白紫罗兰红' },
+                    { hex: '#C71585', name: '中紫罗兰红' },
+                    { hex: '#DC143C', name: '深红' },
+                    { hex: '#B22222', name: '耐火砖红' },
+                    { hex: '#8B0000', name: '暗红' },
+                    { hex: '#800000', name: '栗色' },
+
+                    // 绿色系列
+                    { hex: '#00FF00', name: '纯绿' },
+                    { hex: '#32CD32', name: '亮绿' },
+                    { hex: '#00FF7F', name: '春绿' },
+                    { hex: '#228B22', name: '森林绿' },
+                    { hex: '#008000', name: '纯绿' },
+                    { hex: '#006400', name: '深绿' },
+                    { hex: '#90EE90', name: '浅绿' },
+                    { hex: '#98FB98', name: '苍白绿' },
+                    { hex: '#8FBC8F', name: '暗海绿' },
+                    { hex: '#3CB371', name: '中绿' },
+                    { hex: '#2E8B57', name: '海绿' },
+                    { hex: '#008080', name: '水鸭色' },
+                    { hex: '#00CED1', name: '暗青色' },
+                    { hex: '#40E0D0', name: '绿松石色' },
+                    { hex: '#48D1CC', name: '中绿松石色' },
+                    { hex: '#00FA9A', name: '薄荷绿' },
+
+                    // 蓝色系列
+                    { hex: '#0000FF', name: '纯蓝' },
+                    { hex: '#1E90FF', name: '道奇蓝' },
+                    { hex: '#00BFFF', name: '深天蓝' },
+                    { hex: '#87CEEB', name: '天蓝色' },
+                    { hex: '#87CEFA', name: '亮天蓝色' },
+                    { hex: '#ADD8E6', name: '浅蓝色' },
+                    { hex: '#B0E2FF', name: '浅钢蓝' },
+                    { hex: '#191970', name: '中蓝' },
+                    { hex: '#000080', name: '海军蓝' },
+                    { hex: '#4169E1', name: '皇家蓝' },
+                    { hex: '#0000CD', name: '中蓝色' },
+                    { hex: '#6495ED', name: '玉米花蓝' },
+                    { hex: '#4682B4', name: '钢蓝' },
+                    { hex: '#B0C4DE', name: '浅钢蓝' },
+                    { hex: '#7B68EE', name: '中紫蓝' },
+                    { hex: '#6A5ACD', name: '午夜蓝' },
+
+                    // 紫色系列
+                    { hex: '#800080', name: '紫色' },
+                    { hex: '#9400D3', name: '暗紫罗兰色' },
+                    { hex: '#9932CC', name: '暗洋红' },
+                    { hex: '#8A2BE2', name: '蓝紫罗兰' },
+                    { hex: '#9370DB', name: '中紫色' },
+                    { hex: '#BA55D3', name: '中兰花紫' },
+                    { hex: '#DA70D6', name: '淡紫色' },
+                    { hex: '#D8BFD8', name: '蓟色' },
+                    { hex: '#E6E6FA', name: '薰衣草紫' },
+                    { hex: '#EE82EE', name: '紫罗兰' },
+                    { hex: '#FF00FF', name: '洋红' },
+                    { hex: '#FFC0CB', name: '粉红' },
+
+                    // 黄色系列
+                    { hex: '#FFFF00', name: '纯黄' },
+                    { hex: '#FFFFE0', name: '浅黄' },
+                    { hex: '#FFFACD', name: '柠檬绸' },
+                    { hex: '#FAFAD2', name: '浅黄' },
+                    { hex: '#FFF8DC', name: '玉米色' },
+                    { hex: '#FFE4B5', name: '桃色' },
+                    { hex: '#FFEBCD', name: '古董白' },
+                    { hex: '#FFDEAD', name: '纳瓦白' },
+                    { hex: '#F5DEB3', name: '小麦色' },
+                    { hex: '#FFA500', name: '橙色' },
+                    { hex: '#FFD700', name: '金色' },
+                    { hex: '#DAA520', name: '金盏花' },
+                    { hex: '#F0E68C', name: '卡其色' },
+                    { hex: '#BDB76B', name: '暗卡其色' },
+
+                    // 棕色系列
+                    { hex: '#A52A2A', name: '棕色' },
+                    { hex: '#D2691E', name: '巧克力色' },
+                    { hex: '#8B4513', name: '马鞍棕色' },
+                    { hex: '#CD853F', name: '秘鲁色' },
+                    { hex: '#F4A460', name: '沙棕色' },
+                    { hex: '#DEB887', name: '棕褐色' },
+                    { hex: '#BC8F8F', name: '玫瑰棕色' },
+                    { hex: '#F5F5DC', name: '米色' },
+                    { hex: '#E8E8E8', name: '浅灰' },
+
+                    // 灰色系列
+                    { hex: '#808080', name: '灰色' },
+                    { hex: '#A9A9A9', name: '暗灰色' },
+                    { hex: '#C0C0C0', name: '银色' },
+                    { hex: '#D3D3D3', name: '浅灰色' },
+                    { hex: '#DCDCDC', name: '灰白' },
+                    { hex: '#F5F5F5', name: '雪白' },
+                    { hex: '#696969', name: '深灰色' },
+                    { hex: '#778899', name: '亮蓝灰' },
+                    { hex: '#2F4F4F', name: '暗石板灰' },
+                    { hex: '#1C1C1C', name: '近黑色' },
+                    { hex: '#000000', name: '纯黑色' }
+                ];
+
+                // 初始化
+                function initCanvas() {
+                    if (!canvas) {
+                        canvas = document.createElement('canvas');
+                        ctx = canvas.getContext('2d');
+                    }
+
+                    canvas.width = previewImage.naturalWidth;
+                    canvas.height = previewImage.naturalHeight;
+                    ctx.drawImage(previewImage, 0, 0, canvas.width, canvas.height);
+                    imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+                    // 初始化像素网格
+                    initPixelGrid();
                 }
-                
-                canvas.width = previewImage.naturalWidth;
-                canvas.height = previewImage.naturalHeight;
-                ctx.drawImage(previewImage, 0, 0, canvas.width, canvas.height);
-                imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                
+
                 // 初始化像素网格
-                initPixelGrid();
-            }
+                function initPixelGrid() {
+                    pixelGrid.innerHTML = '';
+                    pixelElements = [];
 
-            // 初始化像素网格
-            function initPixelGrid() {
-                pixelGrid.innerHTML = '';
-                pixelElements = [];
-                
-                for (let y = 0; y < gridSize; y++) {
-                    for (let x = 0; x < gridSize; x++) {
-                        const pixel = document.createElement('div');
-                        pixel.className = 'pixel';
-                        pixel.dataset.x = x;
-                        pixel.dataset.y = y;
-                        pixelGrid.appendChild(pixel);
-                        pixelElements.push(pixel);
-                    }
-                }
-            }
-
-            // 处理图片上传
-            function handleImageUpload(file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    previewImage.src = e.target.result;
-                    previewImage.onload = function() {
-                        // 添加淡入动画
-                        imageContainer.classList.remove('hidden');
-                        imageContainer.classList.add('fade-in');
-                        
-                        // 隐藏上传区域
-                        uploadArea.classList.add('fade-out');
-                        setTimeout(() => {
-                            uploadArea.classList.add('hidden');
-                        }, 500);
-                        
-                        initCanvas();
-                        
-                        // 自动开始吸色模式
-                        startPicking();
-                    };
-                };
-                reader.readAsDataURL(file);
-            }
-
-            // 开始吸色模式
-            function startPicking() {
-                isPicking = true;
-                pickBtn.innerHTML = '<i class="fa fa-check mr-1"></i> 完成';
-                pickBtn.classList.remove('btn-primary');
-                pickBtn.classList.add('btn-secondary');
-                
-                // 鼠标设备支持
-                previewImage.addEventListener('mousemove', handleColorPick);
-                previewImage.addEventListener('mouseleave', handleMouseLeave);
-                previewImage.addEventListener('mouseenter', handleMouseEnter);
-                previewImage.addEventListener('click', stopPicking);
-                
-                // 触摸设备支持
-                previewImage.addEventListener('touchmove', handleColorPick);
-                previewImage.addEventListener('touchend', handleTouchEnd);
-            }
-
-            // 停止吸色模式
-            function stopPicking() {
-                isPicking = false;
-                pickBtn.innerHTML = '<i class="fa fa-eyedropper mr-1"></i> 开始吸色';
-                pickBtn.classList.remove('btn-secondary');
-                pickBtn.classList.add('btn-primary');
-                magnifier.classList.add('hidden');
-                crosshair.classList.add('hidden');
-                
-                // 移除事件监听器
-                previewImage.removeEventListener('mousemove', handleColorPick);
-                previewImage.removeEventListener('mouseleave', handleMouseLeave);
-                previewImage.removeEventListener('mouseenter', handleMouseEnter);
-                previewImage.removeEventListener('click', stopPicking);
-                previewImage.removeEventListener('touchmove', handleColorPick);
-                previewImage.removeEventListener('touchend', handleTouchEnd);
-            }
-
-            // 处理颜色拾取
-            function handleColorPick(e) {
-                e.preventDefault();
-                
-                // 获取鼠标/触摸位置
-                const rect = previewImage.getBoundingClientRect();
-                let x, y;
-                
-                if (e.type.includes('mouse')) {
-                    x = e.clientX - rect.left;
-                    y = e.clientY - rect.top;
-                } else {
-                    x = e.touches[0].clientX - rect.left;
-                    y = e.touches[0].clientY - rect.top;
-                }
-                
-                // 确保在图片范围内
-                if (x < 0 || x >= rect.width || y < 0 || y >= rect.height) {
-                    return;
-                }
-                
-                // 显示放大镜和十字准线
-                magnifier.classList.remove('hidden');
-                crosshair.classList.remove('hidden');
-                
-                // 更新放大镜和十字准线位置
-                magnifier.style.left = `${x}px`;
-                magnifier.style.top = `${y}px`;
-                crosshair.style.left = `${x}px`;
-                crosshair.style.top = `${y}px`;
-                
-                // 计算在原始图像上的位置
-                const scaleX = canvas.width / rect.width;
-                const scaleY = canvas.height / rect.height;
-                const imageX = Math.floor(x * scaleX);
-                const imageY = Math.floor(y * scaleY);
-                
-                // 更新像素网格
-                updatePixelGrid(imageX, imageY);
-                
-                // 获取中心像素颜色
-                const pixelIndex = (imageY * canvas.width + imageX) * 4;
-                const r = imageData.data[pixelIndex];
-                const g = imageData.data[pixelIndex + 1];
-                const b = imageData.data[pixelIndex + 2];
-                
-                // 更新颜色信息
-                updateColorInfo(r, g, b);
-            }
-
-            // 更新像素网格
-            function updatePixelGrid(centerX, centerY) {
-                const halfSize = Math.floor(gridSize / 2);
-                
-                pixelElements.forEach(pixel => {
-                    // 计算相对于中心的偏移量
-                    const offsetX = parseInt(pixel.dataset.x) - halfSize;
-                    const offsetY = parseInt(pixel.dataset.y) - halfSize;
-                    
-                    // 计算在原始图像上的像素位置
-                    const pixelX = centerX + offsetX;
-                    const pixelY = centerY + offsetY;
-                    
-                    // 检查是否在图像范围内
-                    if (pixelX >= 0 && pixelX < canvas.width && pixelY >= 0 && pixelY < canvas.height) {
-                        const pixelIndex = (pixelY * canvas.width + pixelX) * 4;
-                        const r = imageData.data[pixelIndex];
-                        const g = imageData.data[pixelIndex + 1];
-                        const b = imageData.data[pixelIndex + 2];
-                        
-                        pixel.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
-                        
-                        // 选中的中心像素
-                        if (offsetX === 0 && offsetY === 0) {
-                            pixel.classList.add('selected-pixel');
-                        } else {
-                            pixel.classList.remove('selected-pixel');
+                    for (let y = 0; y < gridSize; y++) {
+                        for (let x = 0; x < gridSize; x++) {
+                            const pixel = document.createElement('div');
+                            pixel.className = 'pixel';
+                            pixel.dataset.x = x;
+                            pixel.dataset.y = y;
+                            pixelGrid.appendChild(pixel);
+                            pixelElements.push(pixel);
                         }
-                    } else {
-                        // 超出图像范围的像素设为透明
-                        pixel.style.backgroundColor = 'transparent';
-                        pixel.classList.remove('selected-pixel');
-                    }
-                });
-            }
-
-            // 更新颜色信息
-            function updateColorInfo(r, g, b) {
-                // 计算百分比
-                const rPercent = Math.round((r / 255) * 100);
-                const gPercent = Math.round((g / 255) * 100);
-                const bPercent = Math.round((b / 255) * 100);
-                
-                // 更新显示 - 确保HEX值为大写
-                const hex = `#${componentToHex(r)}${componentToHex(g)}${componentToHex(b)}`.toUpperCase();
-                const rgb = `rgb(${r}, ${g}, ${b})`;
-                
-                hexValue.textContent = hex;
-                rgbValue.textContent = rgb;
-                colorPreview.style.backgroundColor = hex;
-                
-                // 更新颜色组成
-                redBar.style.width = `${rPercent}%`;
-                greenBar.style.width = `${gPercent}%`;
-                blueBar.style.width = `${bPercent}%`;
-                redPercent.textContent = `${rPercent}%`;
-                greenPercent.textContent = `${gPercent}%`;
-                bluePercent.textContent = `${bPercent}%`;
-                
-                // 添加颜色变化动画
-                colorPreview.classList.add('scale-105');
-                setTimeout(() => {
-                    colorPreview.classList.remove('scale-105');
-                }, 200);
-                
-                // 更新颜色名称
-                updateColorName(r, g, b);
-            }
-
-            // 更新颜色名称（使用颜色对照表）
-            function updateColorName(r, g, b) {
-                // 移除旧的动画类
-                colorNameValue.classList.remove('name-fade-in');
-                
-                // 触发重排
-                void colorNameValue.offsetWidth;
-                
-                // 添加新的动画类
-                colorNameValue.classList.add('name-fade-in');
-                
-                // 查找最接近的颜色名称
-                const closestColor = findClosestColor(r, g, b);
-                colorNameValue.textContent = closestColor.name;
-            }
-
-            // 查找最接近的颜色
-            function findClosestColor(r, g, b) {
-                let minDistance = Infinity;
-                let closestColor = colorTable[0]; // 默认选择第一个颜色
-                
-                colorTable.forEach(color => {
-                    // 转换HEX为RGB
-                    const hex = color.hex;
-                    const r2 = parseInt(hex.substring(1, 3), 16);
-                    const g2 = parseInt(hex.substring(3, 5), 16);
-                    const b2 = parseInt(hex.substring(5, 7), 16);
-                    
-                    // 计算欧氏距离
-                    const distance = Math.sqrt(
-                        Math.pow(r - r2, 2) +
-                        Math.pow(g - g2, 2) +
-                        Math.pow(b - b2, 2)
-                    );
-                    
-                    // 如果当前距离更小，则更新最接近的颜色
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        closestColor = color;
-                    }
-                });
-                
-                return closestColor;
-            }
-
-            // 辅助函数：将RGB分量转换为HEX
-            function componentToHex(c) {
-                const hex = c.toString(16);
-                return hex.length === 1 ? '0' + hex : hex;
-            }
-
-            // 事件监听器
-            uploadArea.addEventListener('click', () => {
-                imageUpload.click();
-            });
-
-            uploadArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadArea.classList.add('border-primary');
-            });
-
-            uploadArea.addEventListener('dragleave', () => {
-                uploadArea.classList.remove('border-primary');
-            });
-
-            uploadArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                uploadArea.classList.remove('border-primary');
-                
-                if (e.dataTransfer.files.length > 0) {
-                    const file = e.dataTransfer.files[0];
-                    if (file.type.startsWith('image/')) {
-                        handleImageUpload(file);
-                    } else {
-                        alert('请上传图片文件！');
                     }
                 }
-            });
 
-            imageUpload.addEventListener('change', () => {
-                if (imageUpload.files.length > 0) {
-                    const file = imageUpload.files[0];
-                    if (file.type.startsWith('image/')) {
-                        handleImageUpload(file);
+                // 处理图片上传
+                function handleImageUpload(file) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        previewImage.src = e.target.result;
+                        previewImage.onload = function () {
+                            // 添加淡入动画
+                            imageContainer.classList.remove('hidden');
+                            imageContainer.classList.add('fade-in');
+
+                            // 隐藏上传区域
+                            uploadArea.classList.add('fade-out');
+                            setTimeout(() => {
+                                uploadArea.classList.add('hidden');
+                            }, 500);
+
+                            initCanvas();
+
+                            // 自动开始吸色模式
+                            startPicking();
+                        };
+                    };
+                    reader.readAsDataURL(file);
+                }
+
+                // 开始吸色模式
+                function startPicking() {
+                    isPicking = true;
+                    pickBtn.innerHTML = '<i class="fa fa-check mr-1"></i> 完成';
+                    pickBtn.classList.remove('btn-primary');
+                    pickBtn.classList.add('btn-secondary');
+
+                    // 鼠标设备支持
+                    previewImage.addEventListener('mousemove', handleColorPick);
+                    previewImage.addEventListener('mouseleave', handleMouseLeave);
+                    previewImage.addEventListener('mouseenter', handleMouseEnter);
+                    previewImage.addEventListener('click', stopPicking);
+
+                    // 触摸设备支持
+                    previewImage.addEventListener('touchmove', handleColorPick);
+                    previewImage.addEventListener('touchend', handleTouchEnd);
+                }
+
+                // 停止吸色模式
+                function stopPicking() {
+                    isPicking = false;
+                    pickBtn.innerHTML = '<i class="fa fa-eyedropper mr-1"></i> 吸色';
+                    pickBtn.classList.remove('btn-secondary');
+                    pickBtn.classList.add('btn-primary');
+                    magnifier.classList.add('hidden');
+                    crosshair.classList.add('hidden');
+
+                    // 移除事件监听器
+                    previewImage.removeEventListener('mousemove', handleColorPick);
+                    previewImage.removeEventListener('mouseleave', handleMouseLeave);
+                    previewImage.removeEventListener('mouseenter', handleMouseEnter);
+                    previewImage.removeEventListener('click', stopPicking);
+                    previewImage.removeEventListener('touchmove', handleColorPick);
+                    previewImage.removeEventListener('touchend', handleTouchEnd);
+                }
+
+                // 处理颜色拾取
+                function handleColorPick(e) {
+                    e.preventDefault();
+
+                    // 获取鼠标/触摸位置
+                    const rect = previewImage.getBoundingClientRect();
+                    let x, y;
+
+                    if (e.type.includes('mouse')) {
+                        x = e.clientX - rect.left;
+                        y = e.clientY - rect.top;
                     } else {
-                        alert('请上传图片文件！');
+                        x = e.touches[0].clientX - rect.left;
+                        y = e.touches[0].clientY - rect.top;
                     }
-                }
-            });
 
-            pickBtn.addEventListener('click', () => {
-                if (isPicking) {
-                    stopPicking();
-                } else if (previewImage.src) {
-                    startPicking();
-                } else {
-                    alert('请先上传图片！');
-                }
-            });
+                    // 确保在图片范围内
+                    if (x < 0 || x >= rect.width || y < 0 || y >= rect.height) {
+                        return;
+                    }
 
-            resetBtn.addEventListener('click', () => {
-                stopPicking();
-                imageContainer.classList.add('fade-out');
-                uploadArea.classList.remove('hidden');
-                uploadArea.classList.remove('fade-out');
-                
-                setTimeout(() => {
-                    imageContainer.classList.add('hidden');
-                    previewImage.src = '';
-                    imageData = null;
-                    canvas = null;
-                    ctx = null;
-                    
-                    // 重置颜色信息
-                    updateColorInfo(255, 255, 255);
-                }, 500);
-            });
-
-            // 复制功能
-            function setupCopy(element, container, toast) {
-                element.addEventListener('mousedown', () => {
-                    longPressTimer = setTimeout(() => {
-                        navigator.clipboard.writeText(element.textContent)
-                            .then(() => {
-                                toast.classList.add('show');
-                                setTimeout(() => {
-                                    toast.classList.remove('show');
-                                }, 1500);
-                            })
-                            .catch(err => {
-                                console.error('复制失败: ', err);
-                                alert('复制失败，请手动复制');
-                            });
-                    }, LONG_PRESS_DURATION);
-                });
-
-                element.addEventListener('mouseup', () => {
-                    clearTimeout(longPressTimer);
-                });
-
-                element.addEventListener('mouseleave', () => {
-                    clearTimeout(longPressTimer);
-                });
-
-                // 触摸设备支持
-                element.addEventListener('touchstart', () => {
-                    longPressTimer = setTimeout(() => {
-                        navigator.clipboard.writeText(element.textContent)
-                            .then(() => {
-                                toast.classList.add('show');
-                                setTimeout(() => {
-                                    toast.classList.remove('show');
-                                }, 1500);
-                            })
-                            .catch(err => {
-                                console.error('复制失败: ', err);
-                                alert('复制失败，请手动复制');
-                            });
-                    }, LONG_PRESS_DURATION);
-                });
-
-                element.addEventListener('touchend', () => {
-                    clearTimeout(longPressTimer);
-                });
-            }
-
-            setupCopy(rgbValue, rgbContainer, rgbToast);
-            setupCopy(hexValue, hexContainer, hexToast);
-
-            // 帮助模态框
-            infoBtn.addEventListener('click', () => {
-                infoModal.classList.remove('hidden');
-            });
-
-            closeModal.addEventListener('click', () => {
-                infoModal.classList.add('hidden');
-            });
-
-            gotItBtn.addEventListener('click', () => {
-                infoModal.classList.add('hidden');
-            });
-
-            // 鼠标离开/进入图片
-            function handleMouseLeave() {
-                magnifier.classList.add('hidden');
-                crosshair.classList.add('hidden');
-            }
-
-            function handleMouseEnter() {
-                if (isPicking) {
+                    // 显示放大镜和十字准线
                     magnifier.classList.remove('hidden');
                     crosshair.classList.remove('hidden');
-                }
-            }
 
-            // 触摸结束
-            function handleTouchEnd() {
-                // 触摸结束后短暂显示放大镜，提高可用性
-                setTimeout(() => {
+                    // 更新放大镜和十字准线位置
+                    magnifier.style.left = `${x}px`;
+                    magnifier.style.top = `${y}px`;
+                    crosshair.style.left = `${x}px`;
+                    crosshair.style.top = `${y}px`;
+
+                    // 计算在原始图像上的位置
+                    const scaleX = canvas.width / rect.width;
+                    const scaleY = canvas.height / rect.height;
+                    const imageX = Math.floor(x * scaleX);
+                    const imageY = Math.floor(y * scaleY);
+
+                    // 更新像素网格
+                    updatePixelGrid(imageX, imageY);
+
+                    // 获取中心像素颜色
+                    const pixelIndex = (imageY * canvas.width + imageX) * 4;
+                    const r = imageData.data[pixelIndex];
+                    const g = imageData.data[pixelIndex + 1];
+                    const b = imageData.data[pixelIndex + 2];
+
+                    // 更新颜色信息
+                    updateColorInfo(r, g, b);
+                }
+
+                // 更新像素网格
+                function updatePixelGrid(centerX, centerY) {
+                    const halfSize = Math.floor(gridSize / 2);
+
+                    pixelElements.forEach(pixel => {
+                        // 计算相对于中心的偏移量
+                        const offsetX = parseInt(pixel.dataset.x) - halfSize;
+                        const offsetY = parseInt(pixel.dataset.y) - halfSize;
+
+                        // 计算在原始图像上的像素位置
+                        const pixelX = centerX + offsetX;
+                        const pixelY = centerY + offsetY;
+
+                        // 检查是否在图像范围内
+                        if (pixelX >= 0 && pixelX < canvas.width && pixelY >= 0 && pixelY < canvas.height) {
+                            const pixelIndex = (pixelY * canvas.width + pixelX) * 4;
+                            const r = imageData.data[pixelIndex];
+                            const g = imageData.data[pixelIndex + 1];
+                            const b = imageData.data[pixelIndex + 2];
+
+                            pixel.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+
+                            // 选中的中心像素
+                            if (offsetX === 0 && offsetY === 0) {
+                                pixel.classList.add('selected-pixel');
+                            } else {
+                                pixel.classList.remove('selected-pixel');
+                            }
+                        } else {
+                            // 超出图像范围的像素设为透明
+                            pixel.style.backgroundColor = 'transparent';
+                            pixel.classList.remove('selected-pixel');
+                        }
+                    });
+                }
+
+                // 更新颜色信息
+                function updateColorInfo(r, g, b) {
+                    // 计算百分比
+                    const rPercent = Math.round((r / 255) * 100);
+                    const gPercent = Math.round((g / 255) * 100);
+                    const bPercent = Math.round((b / 255) * 100);
+
+                    // 更新显示 - 确保HEX值为大写
+                    const hex = `#${componentToHex(r)}${componentToHex(g)}${componentToHex(b)}`.toUpperCase();
+                    const rgb = `rgb(${r}, ${g}, ${b})`;
+
+                    hexValue.textContent = hex;
+                    rgbValue.textContent = rgb;
+                    colorPreview.style.backgroundColor = hex;
+
+                    // 更新颜色组成
+                    redBar.style.width = `${rPercent}%`;
+                    greenBar.style.width = `${gPercent}%`;
+                    blueBar.style.width = `${bPercent}%`;
+                    redPercent.textContent = `${rPercent}%`;
+                    greenPercent.textContent = `${gPercent}%`;
+                    bluePercent.textContent = `${bPercent}%`;
+
+                    // 添加颜色变化动画
+                    colorPreview.classList.add('scale-105');
+                    setTimeout(() => {
+                        colorPreview.classList.remove('scale-105');
+                    }, 200);
+
+                    // 更新颜色名称
+                    updateColorName(r, g, b);
+                }
+
+                // 更新颜色名称（使用颜色对照表）
+                function updateColorName(r, g, b) {
+                    // 移除旧的动画类
+                    colorNameValue.classList.remove('name-fade-in');
+
+                    // 触发重排
+                    void colorNameValue.offsetWidth;
+
+                    // 添加新的动画类
+                    colorNameValue.classList.add('name-fade-in');
+
+                    // 查找最接近的颜色名称
+                    const closestColor = findClosestColor(r, g, b);
+                    colorNameValue.textContent = closestColor.name;
+                }
+
+                // 查找最接近的颜色
+                function findClosestColor(r, g, b) {
+                    let minDistance = Infinity;
+                    let closestColor = colorTable[0]; // 默认选择第一个颜色
+
+                    colorTable.forEach(color => {
+                        // 转换HEX为RGB
+                        const hex = color.hex;
+                        const r2 = parseInt(hex.substring(1, 3), 16);
+                        const g2 = parseInt(hex.substring(3, 5), 16);
+                        const b2 = parseInt(hex.substring(5, 7), 16);
+
+                        // 计算欧氏距离
+                        const distance = Math.sqrt(
+                            Math.pow(r - r2, 2) +
+                            Math.pow(g - g2, 2) +
+                            Math.pow(b - b2, 2)
+                        );
+
+                        // 如果当前距离更小，则更新最接近的颜色
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            closestColor = color;
+                        }
+                    });
+
+                    return closestColor;
+                }
+
+                // 辅助函数：将RGB分量转换为HEX
+                function componentToHex(c) {
+                    const hex = c.toString(16);
+                    return hex.length === 1 ? '0' + hex : hex;
+                }
+
+                // 事件监听器
+                uploadArea.addEventListener('click', () => {
+                    imageUpload.click();
+                });
+
+                uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.add('border-primary');
+                });
+
+                uploadArea.addEventListener('dragleave', () => {
+                    uploadArea.classList.remove('border-primary');
+                });
+
+                uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.remove('border-primary');
+
+                    if (e.dataTransfer.files.length > 0) {
+                        const file = e.dataTransfer.files[0];
+                        if (file.type.startsWith('image/')) {
+                            handleImageUpload(file);
+                        } else {
+                            alert('请上传图片文件！');
+                        }
+                    }
+                });
+
+                imageUpload.addEventListener('change', () => {
+                    if (imageUpload.files.length > 0) {
+                        const file = imageUpload.files[0];
+                        if (file.type.startsWith('image/')) {
+                            handleImageUpload(file);
+                        } else {
+                            alert('请上传图片文件！');
+                        }
+                    }
+                });
+
+                pickBtn.addEventListener('click', () => {
+                    if (isPicking) {
+                        stopPicking();
+                    } else if (previewImage.src) {
+                        startPicking();
+                    } else {
+                        alert('请先上传图片！');
+                    }
+                });
+
+                resetBtn.addEventListener('click', () => {
+                    stopPicking();
+                    imageContainer.classList.add('fade-out');
+                    uploadArea.classList.remove('hidden');
+                    uploadArea.classList.remove('fade-out');
+
+                    setTimeout(() => {
+                        imageContainer.classList.add('hidden');
+                        previewImage.src = '';
+                        imageData = null;
+                        canvas = null;
+                        ctx = null;
+
+                        // 重置颜色信息
+                        updateColorInfo(255, 255, 255);
+                    }, 500);
+                });
+
+                // 复制功能
+                function setupCopy(element, container, toast) {
+                    element.addEventListener('mousedown', () => {
+                        longPressTimer = setTimeout(() => {
+                            navigator.clipboard.writeText(element.textContent)
+                                .then(() => {
+                                    toast.classList.add('show');
+                                    setTimeout(() => {
+                                        toast.classList.remove('show');
+                                    }, 1500);
+                                })
+                                .catch(err => {
+                                    console.error('复制失败: ', err);
+                                    alert('复制失败，请手动复制');
+                                });
+                        }, LONG_PRESS_DURATION);
+                    });
+
+                    element.addEventListener('mouseup', () => {
+                        clearTimeout(longPressTimer);
+                    });
+
+                    element.addEventListener('mouseleave', () => {
+                        clearTimeout(longPressTimer);
+                    });
+
+                    // 触摸设备支持
+                    element.addEventListener('touchstart', () => {
+                        longPressTimer = setTimeout(() => {
+                            navigator.clipboard.writeText(element.textContent)
+                                .then(() => {
+                                    toast.classList.add('show');
+                                    setTimeout(() => {
+                                        toast.classList.remove('show');
+                                    }, 1500);
+                                })
+                                .catch(err => {
+                                    console.error('复制失败: ', err);
+                                    alert('复制失败，请手动复制');
+                                });
+                        }, LONG_PRESS_DURATION);
+                    });
+
+                    element.addEventListener('touchend', () => {
+                        clearTimeout(longPressTimer);
+                    });
+                }
+
+                setupCopy(rgbValue, rgbContainer, rgbToast);
+                setupCopy(hexValue, hexContainer, hexToast);
+
+                // 帮助模态框
+                infoBtn.addEventListener('click', () => {
+                    infoModal.classList.remove('hidden');
+                });
+
+                closeModal.addEventListener('click', () => {
+                    infoModal.classList.add('hidden');
+                });
+
+                gotItBtn.addEventListener('click', () => {
+                    infoModal.classList.add('hidden');
+                });
+
+                // 鼠标离开/进入图片
+                function handleMouseLeave() {
+                    magnifier.classList.add('hidden');
+                    crosshair.classList.add('hidden');
+                }
+
+                function handleMouseEnter() {
                     if (isPicking) {
                         magnifier.classList.remove('hidden');
                         crosshair.classList.remove('hidden');
                     }
-                }, 100);
-            }
+                }
 
-            // 初始化颜色为白色
-            updateColorInfo(255, 255, 255);
-        });
-    </script>
+                // 触摸结束
+                function handleTouchEnd() {
+                    // 触摸结束后短暂显示放大镜，提高可用性
+                    setTimeout(() => {
+                        if (isPicking) {
+                            magnifier.classList.remove('hidden');
+                            crosshair.classList.remove('hidden');
+                        }
+                    }, 100);
+                }
+
+                // 初始化颜色为白色
+                updateColorInfo(255, 255, 255);
+            });
+        </script>
 </body>
+
 </html>
+    
